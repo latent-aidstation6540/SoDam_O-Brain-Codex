@@ -57,3 +57,6 @@ PLAN_PRD_AUDIT.md
 # Codex 로컬 상태 / 개인 메모
 .codex/
 CHECKPOINT.local.md
+
+# 작업 중간 기록 — 공개 저장소에 포함하지 않음
+CHECKPOINT.md
