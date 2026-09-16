@@ -1,0 +1,39 @@
+{
+  "name": "obrain-app",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "description": "O-Brain for Codex — local-first memory, search, dashboard, and MCP server",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": "~26.7.0"
+  },
+  "scripts": {
+    "seed": "node --env-file-if-exists=.env.local src/seed.mjs",
+    "search": "node --env-file-if-exists=.env.local src/search-demo.mjs",
+    "status": "node --env-file-if-exists=.env.local src/status.mjs",
+    "selftest": "node --env-file-if-exists=.env.local src/selftest.mjs",
+    "backup": "node --env-file-if-exists=.env.local src/backup-cli.mjs",
+    "start": "node --env-file-if-exists=.env.local src/server.mjs",
+    "test:transcript": "node src/transcript-selftest.mjs",
+    "test": "npm run test:transcript && npm run test:hooks && npm run test:mcp && npm run test:server && npm run selftest",
+    "test:mcp": "node src/mcp-selftest.mjs",
+    "test:hooks": "node src/hook-selftest.mjs",
+    "test:server": "node src/server-selftest.mjs"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^4.3.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "3d-force-graph": "^1.80.0",
+    "better-sqlite3": "^12.11.1",
+    "express": "^5.2.1",
+    "force-graph": "^1.51.4",
+    "sqlite-vec": "^0.1.9"
+  },
+  "overrides": {
+    "adm-zip": "^0.6.1"
+  },
+  "devDependencies": {
+    "marked": "^16.4.2"
+  }
+}

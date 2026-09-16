@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SoDam O-Brain for Codex — README</title>
+<style>:root { color-scheme: light dark; }
+body { max-width: 920px; margin: 0 auto; padding: 32px 20px 80px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", Roboto, Helvetica, Arial, sans-serif; line-height: 1.65; color: #1b1f24; background: #ffffff; }
+@media (prefers-color-scheme: dark) { body { color: #e6edf3; background: #0d1117; } }
+h1, h2, h3, h4 { line-height: 1.3; margin-top: 1.8em; margin-bottom: 0.6em; scroll-margin-top: 16px; }
+h1 { font-size: 2em; border-bottom: 1px solid #d0d7de; padding-bottom: 0.3em; }
+h2 { font-size: 1.5em; border-bottom: 1px solid #d0d7de; padding-bottom: 0.3em; }
+h3 { font-size: 1.2em; }
+@media (prefers-color-scheme: dark) { h1, h2 { border-color: #30363d; } }
+a { color: #0969da; text-decoration: none; }
+@media (prefers-color-scheme: dark) { a { color: #58a6ff; } }
+a:hover { text-decoration: underline; }
+table { border-collapse: collapse; width: 100%; margin: 1em 0; display: block; overflow-x: auto; }
+th, td { border: 1px solid #d0d7de; padding: 6px 13px; text-align: left; }
+@media (prefers-color-scheme: dark) { th, td { border-color: #30363d; } }
+th { background: #f6f8fa; font-weight: 600; }
+@media (prefers-color-scheme: dark) { th { background: #161b22; } }
+code { background: rgba(175,184,193,0.2); padding: 0.2em 0.4em; border-radius: 6px; font-size: 85%; font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", monospace; }
+pre { background: #f6f8fa; padding: 16px; border-radius: 6px; overflow-x: auto; }
+@media (prefers-color-scheme: dark) { pre { background: #161b22; } }
+pre code { background: none; padding: 0; }
+blockquote { border-left: 4px solid #d0d7de; margin: 0; padding: 0 1em; color: #59636e; }
+@media (prefers-color-scheme: dark) { blockquote { border-color: #30363d; color: #9198a1; } }
+hr { border: none; border-top: 1px solid #d0d7de; margin: 2em 0; }
+@media (prefers-color-scheme: dark) { hr { border-color: #30363d; } }
+details { border: 1px solid #d0d7de; border-radius: 6px; padding: 10px 16px; margin: 0.8em 0; }
+@media (prefers-color-scheme: dark) { details { border-color: #30363d; } }
+summary { cursor: pointer; font-weight: 600; }
+img { max-width: 100%; }</style>
+</head>
+<body>
+<p><a href="./README.md">한국어</a> · <a href="./README.en.html">HTML</a> · <a href="https://github.com/sodam-ai/SoDam_O-Brain">Original project</a></p>
+<h1 id="sodam-o-brain-for-codex">SoDam O-Brain for Codex</h1>
+<p>O-Brain is a personal, local memory plugin that stores user-confirmed decisions, constraints, preferences, and knowledge from Codex conversations in a <strong>SQLite database on your computer</strong>. It recalls related memories in later tasks and includes 2D/3D graph, list, timeline, search, and backup views.</p>
+<blockquote>
+<p>This document describes the local port at <code>D:\AI_Dev_Work\2026y\26y_09m_16d_SoDam_O-Brain-Codex</code>. No public GitHub URL has been provided for this Codex port, so this guide does not invent a download URL.</p>
+</blockquote>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#what-it-does">What It Does</a></li>
+<li><a href="#prerequisites">Prerequisites</a></li>
+<li><a href="#installation">Installation</a></li>
+<li><a href="#quick-start">Quick Start</a></li>
+<li><a href="#how-to-use">How to Use</a></li>
+<li><a href="#commands-and-tests">Commands and Tests</a></li>
+<li><a href="#files-and-data-locations">Files and Data Locations</a></li>
+<li><a href="#workflow-and-architecture">Workflow and Architecture</a></li>
+<li><a href="#security-and-privacy">Security and Privacy</a></li>
+<li><a href="#updates">Updates</a></li>
+<li><a href="#troubleshooting">Troubleshooting</a></li>
+<li><a href="#faq">FAQ</a></li>
+<li><a href="#license-copyright-and-commercial-use">License, Copyright, and Commercial Use</a></li>
+</ol>
+<h2 id="what-it-does">What It Does</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Automatic capture</td>
+<td>A Codex <code>SessionEnd</code> hook finds confirmed statements in recent conversation and saves them. Questions, casual chat, and AI replies are excluded.</td>
+</tr>
+<tr>
+<td>Automatic recall</td>
+<td>A <code>SessionStart</code> hook selects a small set of memories related to the current project and adds them to Codex context.</td>
+</tr>
+<tr>
+<td>Seven MCP tools</td>
+<td>Search, save, single-item retrieval, related items, timeline, relation creation, and category listing.</td>
+</tr>
+<tr>
+<td>Local search</td>
+<td>Combines FTS5 keyword search with 384-dimensional local embeddings.</td>
+</tr>
+<tr>
+<td>Visualization</td>
+<td>Overview, list/detail, 2D/3D graph, timeline, and settings views.</td>
+</tr>
+<tr>
+<td>Data safety</td>
+<td>SQLite WAL, online backups, input limits, secret redaction, and pre-delete backups.</td>
+</tr>
+<tr>
+<td>Compatible parser</td>
+<td>Reads Codex <code>response_item</code> logs and the original Claude Code logs. Codex sessions are stored with the tool value <code>codex</code>.</td>
+</tr>
+</tbody></table>
+<p>O-Brain does not store everything you say. Rule-based extraction selects user statements with clear confirmation signals such as “we decided,” “must,” or “I prefer.” Use <code>$o-brain-remember</code> when a critical item should be saved explicitly.</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<ul>
+<li>Windows 10/11, or a computer that can run Node.js 26.7.x</li>
+<li><strong>Node.js 26.7.x</strong> and npm 11.x</li>
+<li>Codex desktop or Codex CLI with plugin support</li>
+<li>Internet access for the first <code>npm ci</code> and embedding model download</li>
+<li>At least 1 GB of free space recommended for Node dependencies and the local model cache</li>
+</ul>
+<p>Check versions:</p>
+<pre><code class="language-powershell">node --version
+npm --version
+codex --version
+</code></pre>
+<p>This port was verified with Node.js <code>v26.7.0</code>, npm <code>11.6.2</code>, and Codex CLI <code>0.154.0</code>. Other versions may work, but they are not claimed as verified here.</p>
+<h2 id="installation">Installation</h2>
+<h3 id="1-add-the-local-marketplace">1. Add the local marketplace</h3>
+<p>Open PowerShell and move to the port directory.</p>
+<pre><code class="language-powershell">cd &quot;D:\AI_Dev_Work\2026y\26y_09m_16d_SoDam_O-Brain-Codex&quot;
+codex plugin marketplace add .
+</code></pre>
+<h3 id="2-install-the-plugin">2. Install the plugin</h3>
+<pre><code class="language-powershell">codex plugin add o-brain@o-brain-codex
+</code></pre>
+<p>Verify installation:</p>
+<pre><code class="language-powershell">codex plugin list | Select-String &quot;o-brain&quot;
+</code></pre>
+<h3 id="3-prepare-dependencies">3. Prepare dependencies</h3>
+<p>Open a new Codex task and ask:</p>
+<pre><code class="language-text">Use the $o-brain-setup skill to complete first-time setup and run its self-test.
+</code></pre>
+<p>For manual setup, run these commands from the installed plugin root:</p>
+<pre><code class="language-powershell">node scripts/o-brain-cli.mjs setup
+node scripts/o-brain-cli.mjs selftest
+</code></pre>
+<p>Setup runs <code>npm ci</code> with the locked dependencies. The first search or test may download the <code>sentence-transformers/all-MiniLM-L6-v2</code> model.</p>
+<h3 id="updating">Updating</h3>
+<p>After changing the local source, refresh the plugin cache:</p>
+<pre><code class="language-powershell">codex plugin remove o-brain@o-brain-codex
+codex plugin add o-brain@o-brain-codex
+</code></pre>
+<p>Run <code>$o-brain-setup</code> again. The personal database is outside the plugin cache and is not removed by a normal reinstall.</p>
+<h3 id="uninstalling">Uninstalling</h3>
+<pre><code class="language-powershell">codex plugin remove o-brain@o-brain-codex
+codex plugin marketplace remove o-brain-codex
+</code></pre>
+<p>These commands remove the plugin but do not automatically delete personal data. To erase it, create a backup first, inspect <code>%LOCALAPPDATA%\SoDamAI\O-Brain</code>, and delete that folder yourself.</p>
+<h2 id="quick-start">Quick Start</h2>
+<ol>
+<li>Open a new Codex task after installation.</li>
+<li>Run <code>$o-brain-setup</code> once.</li>
+<li>State a confirmed decision, for example: “We decided to use port 7740 for this project&#39;s tests.”</li>
+<li>End the task normally. The <code>SessionEnd</code> hook redacts secrets and saves candidates.</li>
+<li>Start a new task. The <code>SessionStart</code> hook recalls related memories into context.</li>
+<li>Run <code>$o-brain-open</code> to inspect the dashboard.</li>
+</ol>
+<p>To try only the standalone web app:</p>
+<pre><code class="language-powershell">cd app
+npm ci
+npm start
+</code></pre>
+<p>Open <code>http://127.0.0.1:7740/</code>. Direct <code>npm start</code> uses <code>app/data/</code> by default. Codex plugin entry points use the external user data directory by default.</p>
+<h2 id="how-to-use">How to Use</h2>
+<h3 id="codex-skills">Codex skills</h3>
+<table>
+<thead>
+<tr>
+<th>Skill</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>$o-brain-setup</code></td>
+<td>Install dependencies and run the first self-test</td>
+</tr>
+<tr>
+<td><code>$o-brain-open</code></td>
+<td>Check/start the local server and open the dashboard</td>
+</tr>
+<tr>
+<td><code>$o-brain-status</code></td>
+<td>Show memory count, recent items, and data location</td>
+</tr>
+<tr>
+<td><code>$o-brain-backup</code></td>
+<td>Create a safe online SQLite snapshot</td>
+</tr>
+<tr>
+<td><code>$o-brain-selftest</code></td>
+<td>Test core behavior in an isolated database</td>
+</tr>
+<tr>
+<td><code>$o-brain-remember</code></td>
+<td>Manually save only confirmed items from the current conversation</td>
+</tr>
+<tr>
+<td><code>$o-brain-link</code></td>
+<td>Connect only memory relations confirmed by the user</td>
+</tr>
+</tbody></table>
+<h3 id="mcp-tools">MCP tools</h3>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>search_memory</code></td>
+<td>Semantic and keyword search</td>
+</tr>
+<tr>
+<td><code>save_memory</code></td>
+<td>Save after secret redaction</td>
+</tr>
+<tr>
+<td><code>get_memory</code></td>
+<td>Retrieve one full memory</td>
+</tr>
+<tr>
+<td><code>get_related</code></td>
+<td>Retrieve directly connected memories</td>
+</tr>
+<tr>
+<td><code>get_timeline</code></td>
+<td>Retrieve chronological history by topic</td>
+</tr>
+<tr>
+<td><code>add_relation</code></td>
+<td>Add <code>SUPERSEDES</code>, <code>SUPPORTS</code>, <code>INFLUENCES</code>, or <code>CONTRADICTS</code></td>
+</tr>
+<tr>
+<td><code>list_categories</code></td>
+<td>List memory counts by category</td>
+</tr>
+</tbody></table>
+<p>O-Brain does not automatically decide relation types. Only user-confirmed relations are saved to avoid inventing causality.</p>
+<h3 id="dashboard">Dashboard</h3>
+<ul>
+<li><strong>Overview</strong>: counts, types, categories, and recent status</li>
+<li><strong>List</strong>: search, filters, detail, edit, delete, and duplicate cleanup</li>
+<li><strong>Graph</strong>: 2D/3D relationships and shortest path</li>
+<li><strong>Timeline</strong>: decision history and relationships</li>
+<li><strong>Settings</strong>: backup, export, and data location</li>
+</ul>
+<p>The server binds only to <code>127.0.0.1</code>. It is intended for a browser on the same computer and does not provide direct phone or remote-PC access.</p>
+<h2 id="commands-and-tests">Commands and Tests</h2>
+<p>Source repository root:</p>
+<pre><code class="language-powershell">node plugins/o-brain/scripts/o-brain-cli.mjs setup
+node plugins/o-brain/scripts/o-brain-cli.mjs open
+node plugins/o-brain/scripts/o-brain-cli.mjs status
+node plugins/o-brain/scripts/o-brain-cli.mjs backup
+node plugins/o-brain/scripts/o-brain-cli.mjs selftest
+</code></pre>
+<p>Inside <code>app/</code>:</p>
+<pre><code class="language-powershell">npm test                 # parser + hooks + MCP + HTTP + core DB
+npm run test:transcript # Codex/Claude transcript parser
+npm run test:hooks      # SessionStart/SessionEnd
+npm run test:mcp        # stdio handshake + seven tools
+npm run test:server     # auth/CORS/input/CRUD
+npm run selftest        # save/redact/search/relation/graph/delete
+npm run status
+npm run backup
+npm start
+</code></pre>
+<p>No separate lint or TypeScript type-check configuration exists. This is a pure JavaScript ESM project. Release checks use <code>node --check</code>, JSON parsing, and the official plugin validator.</p>
+<h2 id="files-and-data-locations">Files and Data Locations</h2>
+<table>
+<thead>
+<tr>
+<th>Location</th>
+<th>Contents</th>
+<th>In Git?</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>plugins/o-brain/.codex-plugin/plugin.json</code></td>
+<td>Codex plugin manifest</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>.agents/plugins/marketplace.json</code></td>
+<td>Local marketplace</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>plugins/o-brain/plugin.json</code></td>
+<td>Agent Plugins 1.0-compatible manifest</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>plugins/o-brain/.mcp.json</code></td>
+<td>O-Brain MCP registration</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>plugins/o-brain/hooks/</code></td>
+<td>Codex start/end hooks</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>plugins/o-brain/skills/</code></td>
+<td>Seven Codex skills</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>plugins/o-brain/scripts/</code></td>
+<td>Runtime, setup, and MCP launchers</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>app/src/</code></td>
+<td>DB, search, server, parser, and tests</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>app/web/</code></td>
+<td>Local dashboard</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>plugins/o-brain/app/</code></td>
+<td>Installable app copy without development data</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>%LOCALAPPDATA%\SoDamAI\O-Brain\data</code></td>
+<td>Plugin-mode personal DB, backups, exports</td>
+<td><strong>No</strong></td>
+</tr>
+<tr>
+<td><code>%LOCALAPPDATA%\SoDamAI\O-Brain\.env.local</code></td>
+<td>Optional user configuration</td>
+<td><strong>No</strong></td>
+</tr>
+<tr>
+<td><code>app/data/</code></td>
+<td>Direct-source and test data</td>
+<td><strong>No</strong></td>
+</tr>
+</tbody></table>
+<p>Environment variables:</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Default</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>OBRAIN_PORT</code></td>
+<td><code>7740</code></td>
+<td>Local web server port (1–65535)</td>
+</tr>
+<tr>
+<td><code>OBRAIN_DATA_DIR</code></td>
+<td>Plugin mode: external user data directory</td>
+<td>Explicit database location</td>
+</tr>
+<tr>
+<td><code>OBRAIN_CONFIG_DIR</code></td>
+<td>Windows: <code>%LOCALAPPDATA%\SoDamAI\O-Brain</code></td>
+<td>Plugin configuration/data base directory</td>
+</tr>
+<tr>
+<td><code>OBRAIN_VEC_GATE</code></td>
+<td><code>0.92</code></td>
+<td>Advanced vector distance threshold</td>
+</tr>
+</tbody></table>
+<p>Do not commit <code>.env.local</code>; it may contain personal paths. O-Brain does not require an API key.</p>
+<h2 id="workflow-and-architecture">Workflow and Architecture</h2>
+<pre><code class="language-text">Codex session starts
+  -&gt; SessionStart hook
+  -&gt; detect project and prior topic
+  -&gt; SQLite + FTS5 + local embedding search
+  -&gt; add a small set of related memories to Codex context
+
+Codex session ends
+  -&gt; SessionEnd hook
+  -&gt; parse user/assistant messages from Codex JSONL
+  -&gt; remove host text, quotes, and questions
+  -&gt; redact secrets
+  -&gt; rule-based candidate extraction
+  -&gt; store in SQLite
+
+Codex MCP or browser
+  -&gt; seven MCP tools / 127.0.0.1 HTTP API
+  -&gt; same SQLite data
+  -&gt; list, search, graph, timeline, backup
+</code></pre>
+<p>The core stack is Node.js ESM, Express 5, better-sqlite3, sqlite-vec, FTS5, Transformers.js, and Force Graph. O-Brain does not call a separate cloud database or an O-Brain-specific paid AI API.</p>
+<h2 id="security-and-privacy">Security and Privacy</h2>
+<ul>
+<li>The server binds only to <code>127.0.0.1</code>.</li>
+<li>API requests require an ephemeral token generated on each server start and compared with <code>timingSafeEqual</code>.</li>
+<li>External origins are rejected; CSP, frame blocking, and MIME sniffing protection are enabled.</li>
+<li>JSON bodies are limited to 64 KB, and search text, saved content, and page sizes have bounds.</li>
+<li>Patterns such as <code>sk-...</code>, tokens, and passwords are replaced with <code>[REDACTED:type]</code> before extraction.</li>
+<li>Hook payloads are not dumped to diagnostic files.</li>
+<li>Databases, backups, env files, and model caches are excluded from Git.</li>
+<li>Very large transcripts read only the final 20 MB.</li>
+<li>Deletion and duplicate cleanup create an online backup first.</li>
+</ul>
+<p>Redaction is a defense layer and cannot guarantee detection of every secret format. The safest practice is to avoid entering passwords, customer personal data, or private source material into conversations. Review a personal database before sharing or delivering it.</p>
+<h2 id="updates">Updates</h2>
+<details>
+<summary><strong>v0.2.0 — Codex port (2026-09-16)</strong></summary>
+
+<ul>
+<li>Added Codex-standard <code>.codex-plugin</code>, marketplace, and Agent Plugins 1.0 manifests</li>
+<li>Added Codex <code>SessionStart</code>/<code>SessionEnd</code> hooks with <code>${PLUGIN_ROOT}</code> and Windows commands</li>
+<li>Added parsing for Codex <code>response_item</code>, <code>turn_context</code>, <code>custom_tool_call</code>, and <code>function_call</code></li>
+<li>Added automatic MCP stdio registration and verified all seven tools</li>
+<li>Converted Claude slash commands into seven Codex skills</li>
+<li>Moved plugin-mode personal data outside the plugin cache</li>
+<li>Removed hook payload diagnostic-file storage</li>
+<li>Added parser, hook, MCP, HTTP, and DB automated tests</li>
+<li>Live-verified local marketplace installation, cached-plugin setup, and self-test</li>
+<li>Isolated <code>plugins/o-brain</code> as the install package so development dependencies and local data cannot enter the plugin cache</li>
+</ul>
+</details>
+
+<details>
+<summary><strong>Original v0.1 line — local memory app</strong></summary>
+
+<ul>
+<li>SQLite + sqlite-vec + FTS5 hybrid search</li>
+<li>Memory types, importance, confidence, categories, and project scope</li>
+<li>Manual relations, shortest path, 2D/3D graph, and timeline</li>
+<li>Duplicate candidates, confirmed merge/delete, and 10-second undo</li>
+<li>Backup, export, corrupt-backup blocking, and confidence decay</li>
+<li>Local API token, CORS/CSP, input limits, and generic error responses</li>
+</ul>
+</details>
+
+<p>Full design history is in <a href="./.PRD/"><code>.PRD/</code></a>, and the Codex port decision is in <a href="./.PRD/13_CODEX_PORT.md"><code>.PRD/13_CODEX_PORT.md</code></a>.</p>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Check / fix</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>O-Brain skills are missing</td>
+<td>Check <code>codex plugin list</code>, then open a new Codex task.</td>
+</tr>
+<tr>
+<td><code>ERR_MODULE_NOT_FOUND</code></td>
+<td>Run <code>$o-brain-setup</code> or <code>node scripts/o-brain-cli.mjs setup</code>.</td>
+</tr>
+<tr>
+<td>Node version error</td>
+<td>Confirm <code>node --version</code> is 26.7.x.</td>
+</tr>
+<tr>
+<td><code>Marketplace not found</code></td>
+<td>Run <code>codex plugin marketplace add .</code> first, then <code>codex plugin add o-brain@o-brain-codex</code>.</td>
+</tr>
+<tr>
+<td>Port conflict</td>
+<td>Put <code>OBRAIN_PORT=7741</code> in the user <code>.env.local</code> and restart.</td>
+</tr>
+<tr>
+<td>Zero memories</td>
+<td>State a confirmed decision, end the task normally, then run <code>$o-brain-status</code>.</td>
+</tr>
+<tr>
+<td>Automatic capture fails</td>
+<td>Confirm the plugin is active in a new task and run <code>npm run test:hooks</code>.</td>
+</tr>
+<tr>
+<td>Model download fails</td>
+<td>Check internet/proxy access and rerun selftest.</td>
+</tr>
+<tr>
+<td>Dashboard returns 403</td>
+<td>Do not open the saved HTML directly; use <code>$o-brain-open</code> and the local server URL.</td>
+</tr>
+<tr>
+<td>Suspected DB damage</td>
+<td>Stop writes, preserve <code>$o-brain-backup</code> output and <code>data/backup/</code>, then seek expert review.</td>
+</tr>
+</tbody></table>
+<h2 id="faq">FAQ</h2>
+<p><strong>Q. Does O-Brain send conversations to an O-Brain server?</strong></p>
+<p>A. O-Brain does not operate a separate cloud service. O-Brain storage and search are local. Codex conversation processing remains subject to the terms and data settings of the OpenAI product you use.</p>
+<p><strong>Q. Is an API key required?</strong></p>
+<p>A. O-Brain needs no dedicated API key. Codex access and fees belong to the OpenAI service.</p>
+<p><strong>Q. Can I view it on a phone?</strong></p>
+<p>A. The default server is limited to <code>127.0.0.1</code> and the same computer. External publishing requires additional authentication, TLS, and firewall design and is outside the current scope.</p>
+<p><strong>Q. Will an update delete memories?</strong></p>
+<p>A. Plugin-mode data defaults to <code>%LOCALAPPDATA%\SoDamAI\O-Brain\data</code>, separate from the cache. A backup before updating is still recommended.</p>
+<p><strong>Q. Can automatic capture be wrong?</strong></p>
+<p>A. Rule-based extraction can miss or misclassify statements. Review the dashboard and use <code>$o-brain-remember</code> for critical items.</p>
+<h2 id="license-copyright-and-commercial-use">License, Copyright, and Commercial Use</h2>
+<p>O-Brain source is licensed under the <strong>Apache License, Version 2.0</strong>, with <strong>Copyright 2026 SoDam AI Studio</strong>. See <a href="./LICENSE"><code>LICENSE</code></a> for the official text and <a href="./NOTICE"><code>NOTICE</code></a> for third-party notices.</p>
+<table>
+<thead>
+<tr>
+<th>Use</th>
+<th>Guidance</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Personal, educational, internal company use</td>
+<td>Allowed under Apache-2.0 conditions</td>
+</tr>
+<tr>
+<td>Modification, copying, and forks</td>
+<td>Allowed; retain license/copyright notices and mark changes</td>
+</tr>
+<tr>
+<td>Redistribution, sale, service operation, client delivery</td>
+<td>May be allowed; provide LICENSE/NOTICE, disclose changes, and verify third-party rights</td>
+</tr>
+<tr>
+<td>Trademarks and logos</td>
+<td>Apache-2.0 does not grant rights to SoDam AI Studio, O-Brain, OpenAI, or Codex marks</td>
+</tr>
+<tr>
+<td>Warranty and liability</td>
+<td>Provided as-is under the official license disclaimer and limitation of liability</td>
+</tr>
+</tbody></table>
+<p>Additional checks:</p>
+<ul>
+<li>npm dependencies and the embedding model use Apache-2.0, MIT, BSD, ISC, or dual licensing. Package metadata for <code>sharp</code> platform binaries also identifies LGPL-3.0-or-later components, so redistribution or client delivery of binaries requires a separate review of the exact artifacts, notices, and LGPL obligations. Use <code>package-lock.json</code> and <code>NOTICE</code> to verify versions and notices.</li>
+<li>Screenshots were produced from this project&#39;s local dashboard. Any new brand logos or customer content require separate rights review.</li>
+<li>Before distribution, users must verify copyright, privacy, trade-secret, and commercial-use rights for their code, documents, prompts, and AI-generated output.</li>
+<li>OpenAI/Codex use, fees, output, and data processing are governed by the service&#39;s current terms, separate from O-Brain&#39;s license.</li>
+<li>Client delivery, regulated industries, personal-data processing, and large commercial distribution <strong>require legal/professional review</strong>.</li>
+</ul>
+<p>This document provides general project information and is not legal advice.</p>
+
+</body>
+</html>

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "o-brain",
+  "version": "0.2.0",
+  "description": "Codex 대화를 로컬에 기억하고 다음 작업에 되찾아 주는 개인 메모리 플러그인입니다.",
+  "author": {
+    "name": "SoDam AI Studio",
+    "url": "https://github.com/sodam-ai"
+  },
+  "license": "Apache-2.0",
+  "keywords": [
+    "memory",
+    "local-first",
+    "knowledge-graph",
+    "codex",
+    "mcp"
+  ],
+  "extensions": {
+    "com.openai": {
+      "hooks": "./hooks/hooks.json",
+      "interface": {
+        "displayName": "O-Brain",
+        "shortDescription": "Codex용 로컬 개인 메모리",
+        "longDescription": "Codex 세션을 로컬 SQLite에 안전하게 기억하고, MCP 검색과 세션 훅으로 관련 기억을 다시 제공합니다.",
+        "developerName": "SoDam AI Studio",
+        "category": "Productivity",
+        "capabilities": [
+          "Interactive",
+          "Write"
+        ],
+        "defaultPrompt": [
+          "O-Brain 상태를 확인해줘.",
+          "이번 대화의 확정된 결정을 O-Brain에 기억해줘.",
+          "이 프로젝트와 관련된 과거 기억을 찾아줘."
+        ],
+        "brandColor": "#4F7669"
+      }
+    }
+  }
+}

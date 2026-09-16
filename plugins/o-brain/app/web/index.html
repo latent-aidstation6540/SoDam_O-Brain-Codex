@@ -1,0 +1,1820 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="dark light" />
+<title>O-Brain · 내 기억 대시보드</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%234D7CFE'/><text x='16' y='23' font-size='19' fill='white' text-anchor='middle' font-family='sans-serif' font-weight='bold'>O</text></svg>" />
+<script>
+  // 테마 선적용(깜빡임 방지)
+  try { var _t = localStorage.getItem('obrain-theme'); if (_t) document.documentElement.dataset.theme = _t; } catch (e) {}
+  window.__OBT__ = '__OBRAIN_TOKEN__'; // API 토큰 (서버 실행 시 주입 — PRD 08)
+</script>
+<style>
+  :root {
+    --bg:#0A0C10; --bg2:#0D1015; --surface:#13161D; --surface2:#191D26;
+    --border:#21262F; --border2:#2D3340; --text:#EAEEF5; --muted:#8E97A6; --faint:#69727F;
+    --accent:#5B8CFF; --accent-weak:rgba(91,140,255,.14); --star:#F0B046;
+    --ok:#2DD4A7; --danger:#F2555A;
+    --r:11px; --r-sm:8px; --r-lg:16px;
+    --fs-xs:11px; --fs-sm:12.5px; --fs-md:14px; --fs-lg:16px;
+    --shadow-sm:0 1px 2px rgba(0,0,0,.4);
+    --shadow:0 16px 48px -12px rgba(0,0,0,.6), 0 4px 12px rgba(0,0,0,.32), 0 0 0 1px rgba(255,255,255,.03) inset;
+    --ease:.18s cubic-bezier(.4,0,.2,1);
+    --ease-spring:.42s cubic-bezier(.34,1.4,.64,1);
+  }
+  :root[data-theme="light"] {
+    --bg:#EBEEF4; --bg2:#FFFFFF; --surface:#FFFFFF; --surface2:#F3F6FA;
+    --border:#E4E9F1; --border2:#D2DAE5; --text:#0E1726; --muted:#4A5568; --faint:#7A8699;
+    --accent:#3A6BF5; --accent-weak:rgba(58,107,245,.09); --star:#D9942A;
+    --shadow-sm:0 1px 2px rgba(15,23,42,.08);
+    --shadow:0 16px 44px -14px rgba(15,23,42,.22), 0 4px 12px rgba(15,23,42,.08), 0 0 0 1px rgba(15,23,42,.04) inset;
+  }
+  * { box-sizing:border-box; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--text);
+    font:14px/1.55 -apple-system,'Segoe UI',system-ui,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+    letter-spacing:.1px; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    transition:background var(--ease), color var(--ease); }
+  body { display:flex; flex-direction:column; height:100vh; overflow:hidden;
+    background:
+      radial-gradient(900px 520px at 82% -8%, rgba(123,107,255,.10), transparent 60%),
+      radial-gradient(760px 460px at 8% 4%, rgba(91,140,255,.09), transparent 58%),
+      var(--bg); }
+  :root[data-theme="light"] body { background:
+      radial-gradient(900px 520px at 82% -8%, rgba(109,91,240,.07), transparent 60%),
+      radial-gradient(760px 460px at 8% 4%, rgba(58,107,245,.06), transparent 58%),
+      var(--bg); }
+  ::selection { background:rgba(77,124,254,.32); }
+  ::-webkit-scrollbar { width:10px; height:10px; }
+  ::-webkit-scrollbar-thumb { background:var(--border2); border-radius:8px; border:2px solid var(--bg); }
+  button, select, input { font-family:inherit; }
+  :focus { outline:none; }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; border-radius:6px; }
+  @media (prefers-reduced-motion: reduce) { * { transition:none !important; animation:none !important; } }
+
+  /* ── 헤더 ── */
+  header { display:flex; align-items:center; gap:12px; padding:11px 18px;
+    border-bottom:1px solid var(--border); background:color-mix(in srgb, var(--bg2) 78%, transparent);
+    backdrop-filter:saturate(1.3) blur(14px); -webkit-backdrop-filter:saturate(1.3) blur(14px);
+    flex:none; position:relative; z-index:30; }
+  .logo { width:27px; height:27px; border-radius:9px; flex:none;
+    background:var(--accent);
+    box-shadow:0 0 0 1px rgba(255,255,255,.10);
+    display:grid; place-items:center; color:#fff; font-weight:800; font-size:15px; }
+  .brand { font-weight:700; font-size:15px; letter-spacing:.2px; }
+  .brand small { color:var(--muted); font-weight:500; font-size:12px; margin-left:6px; }
+  .search { position:relative; flex:1; max-width:440px; margin-left:8px; }
+  .search > svg { position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--faint); pointer-events:none; }
+  .search input { width:100%; background:var(--surface); border:1px solid var(--border); color:var(--text);
+    border-radius:var(--r); padding:9px 32px 9px 34px; font-size:13.5px; transition:border-color var(--ease), box-shadow var(--ease); }
+  .search input::placeholder { color:var(--faint); }
+  .search input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-weak); }
+  .search .clear { position:absolute; right:6px; top:50%; transform:translateY(-50%); background:none; border:none;
+    color:var(--faint); cursor:pointer; padding:5px; border-radius:6px; display:none; line-height:0; }
+  .search .clear:hover { color:var(--text); background:var(--surface2); }
+  .search.has .clear { display:block; }
+  .search .s-spin { position:absolute; right:27px; top:50%; margin-top:-6px; width:12px; height:12px;
+    border:2px solid var(--border2); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; display:none; }
+  .search.loading .s-spin { display:block; }
+  .search.loading .clear, .search.loading .kbd { display:none; }
+  .search .kbd { position:absolute; right:8px; top:50%; transform:translateY(-50%); font:600 11px/1 inherit; color:var(--faint);
+    border:1px solid var(--border2); border-bottom-width:2px; border-radius:5px; padding:3px 7px; background:var(--surface2); pointer-events:none; }
+  .search.has .kbd { display:none; }
+
+  .htools { display:flex; align-items:center; gap:8px; margin-left:auto; }
+  .icontop { background:var(--surface); border:1px solid var(--border); color:var(--muted); width:36px; height:36px;
+    border-radius:var(--r); cursor:pointer; display:grid; place-items:center; line-height:0; transition:all var(--ease); position:relative; }
+  .icontop:hover { color:var(--text); border-color:var(--border2); }
+  .icontop svg { width:17px; height:17px; }
+  .segmented { display:flex; gap:2px; background:var(--surface); border:1px solid var(--border); border-radius:var(--r); padding:3px; }
+  .segmented button { display:flex; align-items:center; gap:6px; background:none; border:none; color:var(--muted);
+    border-radius:7px; padding:6px 12px; cursor:pointer; font-size:12.5px; font-weight:500; transition:color var(--ease), background var(--ease); }
+  .segmented button:hover { color:var(--text); }
+  .segmented button.on { background:var(--accent); color:#fff; }
+  .segmented svg { width:15px; height:15px; }
+
+  /* 내보내기 메뉴 */
+  .menu { position:absolute; top:42px; right:0; z-index:40; background:var(--surface); border:1px solid var(--border2);
+    border-radius:var(--r); box-shadow:var(--shadow); padding:5px; min-width:150px; display:none; }
+  .menu.open { display:block; }
+  .menu button { display:flex; align-items:center; gap:9px; width:100%; background:none; border:none; color:var(--text);
+    padding:8px 11px; border-radius:7px; cursor:pointer; font-size:13px; text-align:left; }
+  .menu button:hover { background:var(--surface2); }
+  .menu-label { color:var(--muted); font-size:12px; padding:4px 9px 6px; }
+  .set-group { background:var(--surface); border:1px solid var(--border2); border-radius:var(--r-lg); padding:18px 20px; }
+  .set-group h3 { margin:0 0 14px; font-size:14px; font-weight:700; }
+  .set-row { margin-bottom:14px; }
+  .set-row:last-child { margin-bottom:0; }
+  .set-row label.set-check { display:flex; align-items:center; gap:9px; font-size:13px; cursor:pointer; }
+  .set-row .set-desc { color:var(--muted); font-size:12px; margin:4px 0 0 24px; line-height:1.5; }
+
+  /* ── 서브바(통계 + 필터 + 정렬) ── */
+  .subbar { display:flex; align-items:center; gap:8px; padding:9px 18px; border-bottom:1px solid var(--border);
+    background:color-mix(in srgb, var(--bg2) 70%, transparent); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    flex:none; overflow-x:auto; scrollbar-width:none; position:relative; z-index:20; }
+  .subbar::-webkit-scrollbar { display:none; }
+  .chip { display:inline-flex; align-items:center; gap:6px; white-space:nowrap; background:var(--surface);
+    border:1px solid var(--border); color:var(--muted); border-radius:999px; padding:5px 11px; cursor:pointer;
+    font-size:12px; font-weight:500; transition:all var(--ease); }
+  .chip:hover { border-color:var(--border2); color:var(--text); }
+  .chip.on { background:var(--accent-weak); border-color:var(--accent); color:var(--accent); }
+  .chip.all.on { background:var(--surface2); border-color:var(--border2); color:var(--text); font-weight:600; }
+  .chip .cdot { width:7px; height:7px; border-radius:50%; }
+  .chip .cnt { color:var(--faint); font-size:11px; font-variant-numeric:tabular-nums; }
+  .countinfo { margin-left:auto; color:var(--faint); font-size:12px; white-space:nowrap; font-variant-numeric:tabular-nums; padding-left:10px; }
+  .sortsel { background:var(--surface); border:1px solid var(--border); color:var(--muted); border-radius:999px;
+    padding:5px 9px; font-size:12px; cursor:pointer; transition:all var(--ease); }
+  .sortsel:hover { color:var(--text); border-color:var(--border2); }
+
+  main { flex:1; position:relative; overflow:hidden; }
+  section.view { position:absolute; inset:0; overflow:auto; padding:16px 18px 28px; }
+  section.view[hidden] { display:none; }
+
+  /* ── 목록(카드형) ── */
+  .list { max-width:880px; margin:0 auto; display:flex; flex-direction:column; gap:9px; }
+  .row { position:relative; display:flex; gap:13px; align-items:flex-start; background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--r); padding:14px 16px; cursor:pointer; overflow:hidden;
+    transition:border-color var(--ease), background var(--ease), transform var(--ease), box-shadow var(--ease);
+    animation:cardIn .42s cubic-bezier(.22,1,.36,1) both; }
+  .row::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--accent);
+    transform:scaleY(0); transform-origin:50% 50%; transition:transform var(--ease); border-radius:0 3px 3px 0; }
+  .row:hover { background:var(--surface2); border-color:var(--border2); }
+  .row:hover::before { transform:scaleY(.62); }
+  .row:focus-visible { outline:2px solid var(--accent); outline-offset:-1px; }
+  .list .row:nth-child(1){animation-delay:.02s} .list .row:nth-child(2){animation-delay:.05s}
+  .list .row:nth-child(3){animation-delay:.08s} .list .row:nth-child(4){animation-delay:.11s}
+  .list .row:nth-child(5){animation-delay:.14s} .list .row:nth-child(6){animation-delay:.17s}
+  .list .row:nth-child(7){animation-delay:.2s} .list .row:nth-child(8){animation-delay:.23s}
+  @keyframes cardIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  /* 스켈레톤 로딩 */
+  .skel { display:flex; flex-direction:column; gap:9px; max-width:880px; margin:0 auto; }
+  .skrow { display:flex; gap:13px; align-items:flex-start; background:var(--surface); border:1px solid var(--border); border-radius:var(--r); padding:14px 16px; }
+  .skb { background:linear-gradient(90deg,var(--surface2) 25%,var(--border) 37%,var(--surface2) 63%); background-size:400% 100%;
+    animation:shimmer 1.4s ease infinite; border-radius:6px; height:12px; }
+  @keyframes shimmer { 0%{background-position:100% 0} 100%{background-position:-100% 0} }
+  .pill { flex:none; display:inline-flex; align-items:center; justify-content:center; gap:5px; min-width:48px; font-size:11px; font-weight:600; border-radius:7px; padding:3px 9px; line-height:1.5; color:var(--text); }
+  .pill .pdot { width:7px; height:7px; border-radius:50%; flex:none; }
+  .rc { flex:1; min-width:0; }
+  .rtext { color:var(--text); font-size:14px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .rmeta { display:flex; align-items:center; gap:8px; margin-top:7px; color:var(--faint); font-size:11px; }
+  .idots { display:inline-flex; gap:3px; }
+  .idot { width:5px; height:5px; border-radius:50%; background:var(--border2); }
+  .idot.on { background:var(--star); }
+  .rtime { font-variant-numeric:tabular-nums; }
+  .src { margin-left:auto; color:var(--faint); font-size:10px; opacity:.85; }
+
+  /* ── 그래프 ── */
+  #graphHost { position:absolute; inset:0; background:radial-gradient(circle at 50% 38%, #11161f 0%, #0B0D11 70%); }
+  .gpanel { position:absolute; z-index:5; background:rgba(15,18,24,.74); backdrop-filter:blur(8px); border:1px solid #232a33; border-radius:var(--r); }
+  .gbar { top:14px; left:14px; display:flex; gap:6px; align-items:center; padding:5px; }
+  .gbtn { background:none; border:none; color:#8B93A3; border-radius:7px; padding:6px 12px; cursor:pointer; font-size:12.5px; font-weight:500; transition:all var(--ease); }
+  .gbtn:hover { color:#E7EBF2; }
+  .gbtn.on { background:var(--accent); color:#fff; }
+  .gcount { color:#8B93A3; font-size:11.5px; margin:0 8px; }
+  .legend { top:14px; right:18px; display:flex; flex-wrap:wrap; gap:6px 13px; justify-content:flex-end; padding:9px 13px; font-size:11px; color:#8B93A3; max-width:60vw; pointer-events:none; }
+  .legend span { display:inline-flex; align-items:center; }
+  .dot { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; }
+  .gzoom { bottom:14px; right:18px; display:flex; flex-direction:column; padding:4px; gap:2px; }
+  .gzoom button { width:32px; height:32px; background:none; border:none; color:#aeb6c4; border-radius:7px; cursor:pointer; font-size:16px; line-height:1; display:grid; place-items:center; }
+  .gzoom button:hover { background:rgba(255,255,255,.07); color:#fff; }
+  .ghint { bottom:14px; left:14px; color:#6b7484; font-size:11px; padding:6px 10px; }
+
+  /* ── 타임라인 ── */
+  .tl { max-width:780px; margin:0 auto; position:relative; padding-left:6px; }
+  .tl .day { color:var(--muted); font-size:11.5px; font-weight:600; margin:18px 0 8px; letter-spacing:.3px; }
+  .tl .item { position:relative; display:flex; gap:11px; align-items:flex-start; padding:9px 12px; margin-left:14px;
+    border-left:2px solid var(--border); cursor:pointer; transition:border-color var(--ease), background var(--ease); border-radius:0 8px 8px 0; }
+  .tl .item::before { content:''; position:absolute; left:-6px; top:14px; width:9px; height:9px; border-radius:50%; background:var(--surface); border:2px solid var(--border2); }
+  .tl .item:hover { background:var(--surface); border-left-color:var(--accent); }
+  .tl .item:focus-visible { outline:2px solid var(--accent); outline-offset:-1px; }
+  .tl .item:hover::before { border-color:var(--accent); }
+  .tl .item .t { color:var(--text); font-size:13px; }
+
+  /* ── 상세 패널 ── */
+  .scrim { position:absolute; inset:0; background:rgba(0,0,0,.4); opacity:0; pointer-events:none; transition:opacity var(--ease); z-index:15; }
+  .scrim.open { opacity:1; pointer-events:auto; }
+  aside { position:absolute; top:0; right:0; bottom:0; width:380px; max-width:92vw; background:var(--surface);
+    border-left:1px solid var(--border); padding:0; overflow:auto; transform:translateX(100%);
+    transition:transform .22s cubic-bezier(.4,0,.2,1); z-index:20; box-shadow:var(--shadow); }
+  aside.open { transform:translateX(0); }
+  .dhead { display:flex; align-items:center; gap:10px; padding:16px 18px 12px; position:sticky; top:0; background:var(--surface); border-bottom:1px solid var(--border); }
+  .dhead h3 { margin:0; font-size:14px; font-weight:600; flex:1; }
+  .iconbtn { background:none; border:1px solid var(--border); color:var(--muted); width:30px; height:30px; border-radius:8px;
+    cursor:pointer; display:grid; place-items:center; transition:all var(--ease); line-height:0; flex:none; }
+  .iconbtn:hover { color:var(--text); border-color:var(--border2); background:var(--surface2); }
+  .iconbtn.danger:hover { color:#fff; background:var(--danger); border-color:var(--danger); }
+  .dbody { padding:16px 18px 22px; }
+  .dmeta { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
+  .tag { font-size:11px; color:var(--muted); background:var(--bg2); border:1px solid var(--border); border-radius:7px; padding:3px 9px; }
+  .dcontent { background:var(--surface2); border:1px solid var(--border); border-radius:var(--r); padding:14px; white-space:pre-wrap; word-break:break-word; font-size:14px; line-height:1.6; }
+  .dmeta .dtime { color:var(--faint); font-size:11px; align-self:center; }
+
+  /* ── 상세 패널 편집 모드 ── */
+  .dedit { display:none; }
+  .dedit.on { display:block; }
+  .dbody.editing .dcontent, .dbody.editing .drel { display:none; }
+  .dedit textarea { width:100%; min-height:140px; resize:vertical; background:var(--surface2); border:1px solid var(--border2); color:var(--text);
+    border-radius:var(--r); padding:13px 14px; font:inherit; font-size:14px; line-height:1.65; }
+  .dedit textarea:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-weak); }
+  .dedit .erow { display:flex; gap:8px; margin-top:10px; }
+  .dedit .erow label { flex:1; display:flex; flex-direction:column; gap:5px; font-size:11px; color:var(--muted); }
+  .dedit select { background:var(--surface); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:8px 10px; font-size:13px; }
+  .dedit .redactnote { display:flex; gap:7px; align-items:flex-start; color:var(--faint); font-size:11px; margin-top:11px; line-height:1.5; }
+  .dedit .redactnote svg { flex:none; margin-top:1px; color:var(--ok); }
+  .dedit .eact { display:flex; gap:8px; margin-top:14px; }
+  .dedit .eact button { border-radius:9px; padding:10px 16px; font-size:13px; font-weight:600; cursor:pointer; transition:filter var(--ease), background var(--ease); }
+  .dedit .save { flex:1; background:var(--accent); color:#fff; border:none; }
+  .dedit .save:hover { filter:brightness(1.08); }
+  .dedit .save:disabled { opacity:.6; cursor:not-allowed; }
+  .dedit .cancel { background:var(--surface2); color:var(--muted); border:1px solid var(--border2); }
+  .dedit .cancel:hover { color:var(--text); }
+
+  /* ── 빈/로딩 상태 ── */
+  .empty { color:var(--muted); padding:64px 20px; text-align:center; max-width:420px; margin:40px auto; }
+  .empty .ico { width:52px; height:52px; margin:0 auto 16px; border-radius:14px; background:var(--surface); border:1px solid var(--border); display:grid; place-items:center; color:var(--faint); }
+  .empty h4 { margin:0 0 6px; color:var(--text); font-size:15px; font-weight:600; }
+  .empty p { margin:0; font-size:13px; line-height:1.6; }
+  .spinner { width:26px; height:26px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; margin:60px auto; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  /* 그래프 키보드 접근성(PRD §14) — 캔버스는 포커스 불가라 오프스크린 노드 목록으로 미러링 */
+  .ga11y-item { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden;
+    clip:rect(0,0,0,0); white-space:nowrap; border:0; background:none; color:inherit; font:inherit; cursor:pointer; }
+  .ga11y-item:focus { position:fixed; top:10px; left:10px; z-index:80; width:auto; height:auto; margin:0;
+    overflow:visible; clip:auto; white-space:normal; max-width:min(360px,90vw); padding:9px 13px;
+    border-radius:var(--r-sm); background:var(--surface); border:1px solid var(--border); color:var(--text);
+    font-size:var(--fs-sm); box-shadow:var(--shadow); }
+  mark { background:rgba(232,163,61,.28); color:inherit; border-radius:3px; padding:0 1px; }
+  :root[data-theme="light"] mark { background:rgba(232,163,61,.45); }
+
+  /* ── 토스트 ── */
+  #toast { position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px); z-index:60;
+    background:var(--surface); border:1px solid var(--border2); color:var(--text); padding:11px 18px; border-radius:var(--r);
+    box-shadow:var(--shadow); font-size:13px; opacity:0; pointer-events:none; transition:all var(--ease); }
+  #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  #toast.ok { border-color:rgba(45,190,158,.6); } #toast.err { border-color:rgba(242,85,90,.6); }
+  #toast .undo { margin-left:10px; background:var(--accent-weak); border:1px solid var(--accent); color:var(--accent); border-radius:7px; padding:3px 10px; font-size:12px; font-weight:600; cursor:pointer; }
+
+  /* ── 커맨드 팔레트 (⌘K / Ctrl+K) ── */
+  .cmdk-scrim { position:fixed; inset:0; background:rgba(6,8,12,.5); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); z-index:80; opacity:0; pointer-events:none; transition:opacity var(--ease); }
+  .cmdk-scrim.open { opacity:1; pointer-events:auto; }
+  .cmdk { position:fixed; left:50%; top:13vh; transform:translateX(-50%) translateY(-10px) scale(.985); width:min(620px,92vw); z-index:81;
+    background:var(--surface); border:1px solid var(--border2); border-radius:var(--r-lg); box-shadow:var(--shadow);
+    opacity:0; pointer-events:none; transition:opacity var(--ease), transform var(--ease-spring); overflow:hidden; }
+  .cmdk.open { opacity:1; pointer-events:auto; transform:translateX(-50%) translateY(0) scale(1); }
+  .cmdk-in { display:flex; align-items:center; gap:11px; padding:15px 17px; border-bottom:1px solid var(--border); }
+  .cmdk-in svg { color:var(--faint); flex:none; }
+  .cmdk-in input { flex:1; background:none; border:none; color:var(--text); font-size:15.5px; outline:none; letter-spacing:.1px; }
+  .cmdk-in input::placeholder { color:var(--faint); }
+  .cmdk-list { max-height:52vh; overflow:auto; padding:6px; }
+  .cmdk-sec { color:var(--faint); font-size:11px; font-weight:700; padding:9px 10px 4px; letter-spacing:.5px; }
+  .cmdk-item { display:flex; align-items:center; gap:11px; padding:9px 11px; border-radius:9px; cursor:pointer; color:var(--text); font-size:13.5px; }
+  .cmdk-item .ci-ico { width:28px; height:28px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); display:grid; place-items:center; color:var(--muted); flex:none; font-size:14px; }
+  .cmdk-item .ci-t { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .cmdk-item .ci-pill { font-size:10.5px; font-weight:600; padding:2px 7px; border-radius:6px; flex:none; }
+  .cmdk-item .ci-hint { color:var(--faint); font-size:11px; flex:none; }
+  .cmdk-item.sel, .cmdk-item:hover { background:var(--accent-weak); }
+  .cmdk-item.sel { box-shadow:inset 0 0 0 1px var(--accent); }
+  .cmdk-empty { color:var(--faint); font-size:13px; text-align:center; padding:28px; }
+  .cmdk-foot { display:flex; gap:15px; padding:9px 15px; border-top:1px solid var(--border); color:var(--faint); font-size:11px; }
+  .cmdk-foot b { color:var(--muted); font-weight:600; border:1px solid var(--border2); border-radius:4px; padding:1px 5px; font-family:inherit; }
+
+  /* ── 첫 사용자 안내 배너 ── */
+  .introbar { display:flex; align-items:center; gap:10px; padding:10px 18px; background:var(--accent-weak);
+    border-bottom:1px solid var(--border); flex:none; font-size:12.5px; color:var(--text); }
+  .introbar .ib-ico { color:var(--accent); flex:none; line-height:0; }
+  .introbar .ib-txt { flex:1; color:var(--muted); }
+  .introbar .ib-txt b { color:var(--text); font-weight:600; }
+  .introbar .ib-x { background:none; border:none; color:var(--faint); cursor:pointer; padding:4px 8px; border-radius:6px; line-height:0; flex:none; }
+  .introbar .ib-x:hover { color:var(--text); background:var(--surface2); }
+  .introbar[hidden] { display:none; }
+
+  /* ── 관계 섹션(상세 패널) ── */
+  .drel { margin-top:18px; border-top:1px solid var(--border); padding-top:14px; }
+  .drel h4 { margin:0 0 10px; font-size:12.5px; color:var(--muted); font-weight:600; }
+  .relrow { display:flex; align-items:center; gap:8px; padding:7px 9px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; margin-bottom:6px; font-size:12px; }
+  .relrow .rt { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text); }
+  .relrow .x { background:none; border:none; color:var(--faint); cursor:pointer; padding:2px 6px; border-radius:5px; line-height:1; }
+  .relrow .x:hover { color:#fff; background:var(--danger); }
+  .reltag { font-size:10.5px; font-weight:600; padding:2px 7px; border-radius:6px; white-space:nowrap; }
+  .reladd { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+  .reladd select { flex:1; min-width:96px; background:var(--surface); border:1px solid var(--border); color:var(--text); border-radius:7px; padding:7px 8px; font-size:12px; }
+  .reladd button { background:var(--accent); border:none; color:#fff; border-radius:7px; padding:7px 14px; font-size:12px; font-weight:600; cursor:pointer; }
+  .reladd button:hover { filter:brightness(1.08); }
+  .relempty { color:var(--faint); font-size:12px; padding:2px 0 6px; }
+  .reladd .hint { flex-basis:100%; color:var(--faint); font-size:11px; margin-top:2px; }
+  .eleg { display:flex; flex-wrap:wrap; gap:5px 12px; margin-top:8px; padding-top:8px; border-top:1px solid #232a33; font-size:10.5px; color:#8B93A3; flex-basis:100%; }
+  .eleg span { display:inline-flex; align-items:center; }
+  .eleg i { display:inline-block; width:15px; height:0; border-top:2px solid; margin-right:5px; vertical-align:middle; }
+  .tlsup { margin:2px 0 0 0; font-size:11px; color:var(--faint); padding-left:14px; }
+
+  /* ── 개요/인사이트 홈 ── */
+  .ov { max-width:980px; margin:0 auto; display:flex; flex-direction:column; gap:14px; }
+  .ov-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+  .ov-stat { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); padding:16px 17px; position:relative; overflow:hidden;
+    animation:cardIn .42s cubic-bezier(.22,1,.36,1) both; }
+  .ov-stat::after { content:''; position:absolute; left:0; right:0; bottom:0; height:3px; background:var(--accent); opacity:.85; }
+  .ov-stat .n { font-size:30px; font-weight:800; letter-spacing:-.6px; font-variant-numeric:tabular-nums; line-height:1.1; }
+  .ov-stat .l { color:var(--muted); font-size:12px; margin-top:5px; }
+  .ov-stat .ic { position:absolute; right:13px; top:13px; color:var(--faint); opacity:.45; line-height:0; }
+  .ov-stat:nth-child(2){animation-delay:.05s}
+  .ov-stat:nth-child(3){animation-delay:.1s}
+  .ov-stat:nth-child(4){animation-delay:.15s}
+  .ov-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); padding:16px 18px; }
+  .ov-card h4 { margin:0 0 13px; font-size:13px; font-weight:700; color:var(--text); display:flex; align-items:center; gap:7px; }
+  .ov-row2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .ov-bar { display:flex; align-items:center; gap:10px; margin-bottom:10px; font-size:12.5px; }
+  .ov-bar:last-child { margin-bottom:0; }
+  .ov-bar .bl { width:92px; flex:none; color:var(--muted); display:flex; align-items:center; gap:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ov-bar .bl i { width:8px; height:8px; border-radius:50%; flex:none; }
+  .ov-bar .bt { flex:1; height:8px; background:var(--surface2); border-radius:6px; overflow:hidden; }
+  .ov-bar .bf { display:block; height:100%; min-width:3px; border-radius:6px; transition:width .6s var(--ease-spring); }
+  .ov-bar .bn { width:30px; text-align:right; color:var(--faint); font-variant-numeric:tabular-nums; flex:none; }
+  .ov-hub { display:flex; gap:11px; align-items:flex-start; cursor:pointer; padding:11px 12px; border-radius:9px; background:var(--surface2); border:1px solid var(--border); transition:border-color var(--ease), transform var(--ease); }
+  .ov-hub:hover { border-color:var(--border2); }
+  .ov-hub:last-child { margin-bottom:0; }
+  .ov-hub .hubt { flex:1; min-width:0; font-size:13px; color:var(--text); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .ov-hub .hubn { flex:none; color:var(--accent); font-size:11.5px; font-weight:700; }
+  .ov-mut { color:var(--faint); font-size:12px; }
+  .ov-stat.ov-orphan { cursor:pointer; transition:border-color var(--ease), transform var(--ease); }
+  .ov-stat.ov-orphan:hover { border-color:var(--border2); }
+  .ov-stat.ov-orphan:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  .loadmore { width:100%; max-width:880px; margin:2px auto 0; display:block; background:var(--surface); border:1px solid var(--border); color:var(--muted);
+    border-radius:var(--r); padding:12px; font-size:13px; font-weight:600; cursor:pointer; transition:all var(--ease); font-variant-numeric:tabular-nums; }
+  .loadmore:hover { background:var(--surface2); border-color:var(--border2); color:var(--text); }
+  @media (max-width:820px){ .ov-grid{grid-template-columns:repeat(2,1fr)} .ov-row2{grid-template-columns:1fr} }
+
+  /* ── 반응형(모바일 375px) ── */
+  @media (max-width:640px) {
+    header { flex-wrap:wrap; padding:10px 12px; gap:9px; }
+    .search { order:3; flex-basis:100%; max-width:none; margin-left:0; }
+    .htools { width:100%; margin-left:0; display:flex; flex-wrap:wrap; justify-content:flex-start; }
+    .htools .segmented { flex:0 0 100%; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); }
+    .htools .segmented button { justify-content:center; }
+    .brand { display:none; }
+    .introbar .ib-txt { min-width:0; overflow-wrap:anywhere; }
+    .segmented button span { display:none; } .segmented button { padding:7px 10px; }
+    .subbar { padding:8px 12px;
+      /* 가로 스크롤 힌트(2026-09-11): 우측 필터가 화면 밖으로 잘려 보여 버그로 오인되던 것 발견 —
+         실제 콘텐츠는 지우지 않고 시각적으로만 옅게 페이드해 "더 있음"을 암시(스크롤 위치 무관하게 고정). */
+      -webkit-mask-image:linear-gradient(to right, black calc(100% - 28px), transparent 100%);
+      mask-image:linear-gradient(to right, black calc(100% - 28px), transparent 100%);
+    }
+    section.view { padding:12px; }
+    aside { width:100%; max-width:100%; }
+    .legend { display:none; } #g3d { display:none; }
+    /* 터치 타깃 ≥44px (모바일 탭 편의 — 데스크톱 외형 불변) */
+    .icontop, .iconbtn { width:44px; height:44px; }
+    .icontop svg { width:18px; height:18px; }
+    .gzoom button { width:44px; height:44px; font-size:18px; }
+    [role="tab"] { min-height:44px; }
+    .gbtn, .chip, .loadmore { min-height:44px; }
+    .subbar select, .subbar button { min-height:44px; }
+  }
+  /* ── 일괄삭제 선택 모드 ── */
+  .row-cb { display:none; width:20px; height:20px; flex:none; accent-color:var(--danger); margin-top:1px; pointer-events:none; cursor:default; }
+  .sel-mode .row-cb { display:block; }
+  .row.row-selected { background:rgba(242,85,90,.08); border-color:rgba(242,85,90,.35); }
+  .sel-mode .row:hover { transform:none; box-shadow:none; }
+  #selBar { max-width:880px; margin:0 auto 6px; display:flex; align-items:center; gap:8px;
+    position:sticky; top:0; z-index:9; background:color-mix(in srgb,var(--bg2) 85%,transparent);
+    backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); padding:6px 0; }
+  #selBar .s-count { flex:1; font-size:12.5px; color:var(--muted); display:none; }
+  #selBar .s-cancel { display:none; background:var(--surface2); border:1px solid var(--border2);
+    color:var(--muted); border-radius:9px; padding:8px 14px; font-size:12.5px; font-weight:600; cursor:pointer; }
+  #selBar .s-cancel:hover { color:var(--text); }
+  #selBar .s-del { display:none; background:var(--danger); border:none; color:#fff;
+    border-radius:9px; padding:8px 14px; font-size:12.5px; font-weight:600; cursor:pointer; }
+  #selBar .s-del:disabled { opacity:.45; cursor:not-allowed; }
+  #selBar .s-del:not(:disabled):hover { filter:brightness(1.08); }
+  .bd-scrim { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:70; display:none; place-items:center; }
+  .bd-scrim.open { display:grid; }
+  .bd-box { background:var(--surface); border:1px solid var(--border2); border-radius:var(--r-lg);
+    padding:24px 24px 20px; max-width:380px; width:92vw; box-shadow:var(--shadow); }
+  .bd-box h4 { margin:0 0 8px; font-size:15px; font-weight:700; }
+  .bd-box p { margin:0 0 18px; font-size:13px; color:var(--muted); line-height:1.6; }
+  .bd-box .bd-acts { display:flex; gap:8px; justify-content:flex-end; }
+  .bd-box .bd-acts button { border-radius:9px; padding:10px 18px; font-size:13px; font-weight:600; cursor:pointer; border:none; }
+  .bd-cancel-btn { background:var(--surface2); border:1px solid var(--border2) !important; color:var(--muted); }
+  .bd-cancel-btn:hover { color:var(--text); }
+  .bd-del-btn { background:var(--danger); color:#fff; }
+  .bd-del-btn:hover { filter:brightness(1.08); }
+</style>
+</head>
+<body>
+  <header>
+    <div class="logo">O</div>
+    <span class="brand">O-Brain<small>내 기억</small></span>
+    <div class="search" id="searchWrap">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="q" placeholder="기억 검색 (예: 포트, 결정…)" autocomplete="off" aria-label="기억 검색" />
+      <kbd class="kbd" title="단축키: / 를 누르면 검색창으로 이동">/</kbd>
+      <span class="s-spin" id="qSpin" aria-hidden="true"></span>
+      <button class="clear" id="qClear" aria-label="검색 지우기"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="htools">
+      <button class="icontop" id="refreshBtn" aria-label="새로고침 (새 기억 반영)" title="새로고침 — 새 기억·프로젝트 반영"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6M3 22v-6h6"/><path d="M21 13a9 9 0 0 1-15 6.7L3 16M3 11a9 9 0 0 1 15-6.7L21 8"/></svg></button>
+      <button class="icontop" id="themeBtn" aria-label="밝게/어둡게 전환" title="밝게/어둡게 전환"></button>
+      <div style="position:relative">
+        <button class="icontop" id="exportBtn" aria-label="내보내기" title="내보내기" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg></button>
+        <div class="menu" id="exportMenu" role="menu">
+          <button data-fmt="json" role="menuitem" title="지금 화면에 불러온 기억만(최대 500건, 관계 미포함)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>JSON으로 저장(화면 것만)</button>
+          <button data-fmt="md" role="menuitem" title="지금 화면에 불러온 기억만(최대 500건, 관계 미포함)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>마크다운으로 저장(화면 것만)</button>
+          <button data-full="json" role="menuitem" title="지금까지 모은 기억 전체(관계 포함) — data/export 폴더에 파일로 저장. ⚠️ project 항목에 로컬 경로가 포함될 수 있어요"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>JSON 전체 백업(서버 저장)</button>
+          <button data-full="md" role="menuitem" title="지금까지 모은 기억 전체(관계 포함) — data/export 폴더에 파일로 저장. ⚠️ project 항목에 로컬 경로가 포함될 수 있어요"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>마크다운 전체 백업(서버 저장)</button>
+        </div>
+      </div>
+      <button class="icontop" id="settingsBtn" aria-label="설정" title="설정"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+      <div class="segmented" role="tablist" aria-label="보기 전환">
+        <button id="t-graph" class="on" role="tab" aria-selected="true" aria-controls="view-graph" data-tab="graph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="6" r="2.4"/><circle cx="19" cy="9" r="2.4"/><circle cx="9" cy="18" r="2.4"/><path d="M7 7.5 16.5 9M8 16l2-6M17 11l-6.5 5.2"/></svg><span>그래프</span></button>
+        <button id="t-overview" role="tab" aria-selected="false" aria-controls="view-overview" data-tab="overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>개요</span></button>
+        <button id="t-list" role="tab" aria-selected="false" aria-controls="view-list" data-tab="list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg><span>목록</span></button>
+        <button id="t-timeline" role="tab" aria-selected="false" aria-controls="view-timeline" data-tab="timeline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4v16"/><circle cx="5" cy="8" r="1.6"/><circle cx="5" cy="15" r="1.6"/><path d="M10 8h9M10 15h9"/></svg><span>타임라인</span></button>
+      </div>
+    </div>
+  </header>
+
+  <div class="introbar" id="introbar" hidden>
+    <span class="ib-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5h.01"/></svg></span>
+    <span class="ib-txt"><b>Codex 대화에서 자동으로 모은 기억</b>이에요. 카드를 누르면 자세히 보고, 지우거나 기억끼리 연결할 수 있어요.</span>
+    <button class="ib-x" id="introX" aria-label="안내 닫기"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+  </div>
+
+  <div class="subbar" id="subbar"></div>
+
+  <main>
+    <section id="view-overview" class="view" role="tabpanel" aria-labelledby="t-overview" hidden><div class="ov" id="ov"></div></section>
+
+    <section id="view-list" class="view" role="tabpanel" aria-labelledby="t-list" hidden>
+      <div id="selBar">
+        <span class="s-count" id="selCount"></span>
+        <button class="s-cancel" id="selAll">전체 선택</button>
+        <button class="s-cancel" id="selCancel">취소</button>
+        <button class="s-del" id="selDel" disabled>삭제</button>
+        <button class="chip" id="selModeBtn" style="margin-left:auto"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="4" height="4" rx="1"/><rect x="3" y="11" width="4" height="4" rx="1"/><rect x="3" y="17" width="4" height="4" rx="1"/><path d="M11 7h10M11 13h10M11 19h10"/></svg> 선택</button>
+      </div>
+      <div class="list" id="rows">
+      <div class="skel" aria-hidden="true">
+        <div class="skrow"><div class="skb" style="width:48px;height:22px;border-radius:7px"></div><div style="flex:1"><div class="skb" style="width:72%"></div><div class="skb" style="width:34%;margin-top:9px;height:9px"></div></div></div>
+        <div class="skrow"><div class="skb" style="width:48px;height:22px;border-radius:7px"></div><div style="flex:1"><div class="skb" style="width:88%"></div><div class="skb" style="width:30%;margin-top:9px;height:9px"></div></div></div>
+        <div class="skrow"><div class="skb" style="width:48px;height:22px;border-radius:7px"></div><div style="flex:1"><div class="skb" style="width:64%"></div><div class="skb" style="width:40%;margin-top:9px;height:9px"></div></div></div>
+        <div class="skrow"><div class="skb" style="width:48px;height:22px;border-radius:7px"></div><div style="flex:1"><div class="skb" style="width:80%"></div><div class="skb" style="width:28%;margin-top:9px;height:9px"></div></div></div>
+      </div>
+    </div></section>
+
+    <section id="view-graph" class="view" role="tabpanel" aria-labelledby="t-graph">
+      <div class="gpanel gbar">
+        <button class="gbtn on" id="g2d" data-mode="2d">2D</button>
+        <button class="gbtn" id="g3d" data-mode="3d">3D</button>
+        <button class="gbtn" id="gColor" title="노드 색: 유형 ↔ 분류 전환">분류색</button>
+        <button class="gbtn" id="gAll" style="display:none" title="전체 기억 그래프로 돌아가기">전체 보기</button>
+        <span class="gcount" id="gcount"></span>
+      </div>
+      <div class="gpanel legend">
+        <span id="nodeLegend"></span>
+        <span class="eleg">
+          <span><i style="border-color:#5B8DEF"></i>번복</span>
+          <span><i style="border-color:#2DBE9E"></i>뒷받침</span>
+          <span><i style="border-color:#8B93A3"></i>영향</span>
+          <span><i style="border-color:#F2555A;border-top-style:dashed"></i>충돌</span>
+        </span>
+      </div>
+      <div class="gpanel gzoom">
+        <button id="zin" aria-label="확대" title="확대">+</button>
+        <button id="zout" aria-label="축소" title="축소">−</button>
+        <button id="zfit" aria-label="화면 맞춤" title="화면 맞춤"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m13-5v3a2 2 0 0 1-2 2h-3"/></svg></button>
+      </div>
+      <div class="gpanel ghint">점에 올리면 연결된 기억 강조 · 클릭하면 내용 열림 · 기억끼리 직접 연결하면 색깔 관계선이 생겨요</div>
+      <div id="graphHost"></div>
+      <div id="graphA11y" class="ga11y-wrap" role="group" aria-label="그래프 노드 키보드 목록 — Tab으로 이동, Enter로 열기"></div>
+    </section>
+
+    <section id="view-timeline" class="view" role="tabpanel" aria-labelledby="t-timeline" hidden><div class="tl" id="tl"></div></section>
+
+    <section id="view-settings" class="view" role="tabpanel" aria-labelledby="settingsBtn" hidden><div class="ov" id="settingsPage"></div></section>
+
+    <div class="scrim" id="scrim"></div>
+    <aside id="detail" role="dialog" aria-modal="true" aria-labelledby="d-title" aria-hidden="true" tabindex="-1">
+      <div class="dhead">
+        <h3 id="d-title"></h3>
+        <button class="iconbtn" id="d-copy" aria-label="내용 복사" title="내용 복사"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
+        <button class="iconbtn" id="d-focus" aria-label="이 기억 중심으로 그래프 보기" title="이 기억 중심으로 그래프 보기"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3.2"/><path d="M12 2v3.5M12 18.5V22M2 12h3.5M18.5 12H22"/></svg></button>
+        <button class="iconbtn" id="d-edit" aria-label="이 기억 편집" title="편집"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
+        <button class="iconbtn danger" id="d-del" aria-label="이 기억 삭제" title="이 기억 삭제"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+        <button class="iconbtn" id="d-close" aria-label="닫기" title="닫기 (Esc)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>
+      <div class="dbody" id="d-body"><div class="dmeta" id="d-meta"></div><div class="dcontent" id="d-content"></div>
+        <div class="dedit" id="d-edit-form">
+          <textarea id="e-content" aria-label="기억 내용"></textarea>
+          <div class="erow">
+            <label>유형<select id="e-type" aria-label="유형"></select></label>
+            <label>중요도<select id="e-imp" aria-label="중요도"></select></label>
+          </div>
+          <div class="redactnote"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>저장할 때 비밀번호·API 키 같은 민감정보는 자동으로 가려집니다.</span></div>
+          <div class="eact"><button class="save" id="e-save">저장</button><button class="cancel" id="e-cancel">취소</button></div>
+        </div>
+        <div class="drel" id="d-rel"></div>
+        <div class="drel" id="d-path"></div></div>
+    </aside>
+  </main>
+
+  <div class="cmdk-scrim" id="cmdkScrim"></div>
+  <div class="cmdk" id="cmdk" role="dialog" aria-modal="true" aria-label="명령 팔레트" aria-hidden="true">
+    <div class="cmdk-in">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="cmdkInput" placeholder="명령 실행 또는 기억 검색…  (예: 그래프, 테마, 포트)" autocomplete="off" aria-label="명령 또는 검색" />
+    </div>
+    <div class="cmdk-list" id="cmdkList" role="listbox"></div>
+    <div class="cmdk-foot"><span><b>↑</b> <b>↓</b> 이동</span><span><b>Enter</b> 실행</span><span><b>Esc</b> 닫기</span></div>
+  </div>
+
+  <div class="bd-scrim" id="bdScrim" aria-hidden="true">
+    <div class="bd-box" role="dialog" aria-modal="true" aria-labelledby="bd-title">
+      <h4 id="bd-title">기억 <span id="bdCount"></span>개 삭제</h4>
+      <p id="bd-desc">선택한 기억을 삭제합니다. 삭제 전 자동 백업이 저장됩니다.<br><span style="color:var(--danger);font-weight:600">10초 안에 되돌리기가 가능해요.</span></p>
+      <div class="bd-acts">
+        <button class="bd-cancel-btn" id="bdCancel">취소</button>
+        <button class="bd-del-btn" id="bdDelConfirm">삭제</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <script src="/vendor/force-graph/force-graph.min.js"></script>
+  <script src="/vendor/3d-force-graph/3d-force-graph.min.js"></script>
+  <script>
+    "use strict";
+    const COLORS = { '결정':'#5B8DEF', '제약':'#F2555A', '선호':'#B57BEE', '패턴':'#E8A33D', '지식':'#2DBE9E' };
+    const CATCOLORS = { '보안':'#F2555A','데이터/DB':'#2DBE9E','배포/인프라':'#5B8DEF','AI/모델':'#B57BEE','UI/UX':'#E8A33D','설정/환경':'#48C7E0','규칙/문서':'#9AA4B2','기타':'#6B7280' };
+    let colorBy = 'type'; // 그래프 노드 색: 'type'(유형) ↔ 'category'(분류)
+    const nodeColorOf = n => colorBy==='category' ? (CATCOLORS[n.category] || '#6B7280') : color(n.type);
+    function renderNodeLegend(){
+      const host=document.getElementById('nodeLegend'); if(!host) return;
+      if(colorBy==='category'){
+        const present=[...new Set(((gData&&gData.nodes)?gData.nodes:[]).map(n=>n.category||'기타'))];
+        host.innerHTML=present.map(c=>`<span><i class="dot" style="background:${CATCOLORS[c]||'#6B7280'}"></i>${esc(c)}</span>`).join('');
+      } else {
+        host.innerHTML=TYPES.map(t=>`<span><i class="dot" style="background:${color(t)}"></i>${esc(t)}</span>`).join('');
+      }
+    }
+    const TYPES = ['결정','제약','선호','패턴','지식'];
+    const TYPE_DESC = { '결정':'하기로 정한 것', '제약':'하지 말 것·지켜야 할 규칙', '선호':'더 좋아하는 방식', '패턴':'반복되는 방식·습관', '지식':'알아둔 사실·정보' };
+    const color = t => COLORS[t] || '#8B93A3';
+    const REL = { SUPERSEDES:{ko:'번복함',c:'#5B8DEF',desc:'이 결정이 예전 결정을 대체해요(번복).'}, SUPPORTS:{ko:'뒷받침함',c:'#2DBE9E',desc:'이 기억이 다른 기억의 근거가 돼요.'}, INFLUENCES:{ko:'영향을 줌',c:'#8B93A3',desc:'이 기억이 다른 기억에 영향을 줘요.'}, CONTRADICTS:{ko:'충돌함',c:'#F2555A',desc:'이 기억이 다른 기억과 서로 부딪혀요(충돌).'} };
+    const relColor = r => (REL[r] && REL[r].c) || 'rgba(120,135,160,.20)';
+    let rels = [];
+    // API 토큰 자동 주입 — 서버가 주입한 토큰을 모든 /api/ 요청 헤더에 첨부(PRD 08 로컬 보안)
+    if (window.__OBT__ && window.__OBT__ !== '__OBRAIN_TOKEN__') {
+      const _f0 = window.fetch.bind(window);
+      window.fetch = (url, opts = {}) => {
+        if (typeof url === 'string' && url.startsWith('/api/')) {
+          opts = { ...opts, headers: { 'X-OBrain-Token': window.__OBT__, ...(opts.headers || {}) } };
+        }
+        return _f0(url, opts);
+      };
+    }
+    const get = u => fetch(u).then(r => r.json());
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+    function hexA(hex, a){ const h=hex.replace('#',''); const n=parseInt(h.length===3?h.replace(/(.)/g,'$1$1'):h,16);
+      return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`; }
+    function lighten(hex, amt){ const h=hex.replace('#',''); const n=parseInt(h,16); let r=(n>>16)&255,g=(n>>8)&255,b=n&255;
+      r=Math.round(r+(255-r)*amt); g=Math.round(g+(255-g)*amt); b=Math.round(b+(255-b)*amt); return `rgb(${r},${g},${b})`; }
+
+    let all = [], searchResults = null, activeType = '', tab = 'graph', curQuery = '', sortMode = 'new';
+    let selMode = false, selectedIds = new Set(); // 일괄삭제 선택 모드
+    let minImp = 0, period = 'all', localFocus = null, projectFilter = '', scopeFilter = '', orphanView = false, travelDate = '', lowConfOnly = false, noiseOnly = false; // 중요도/기간/프로젝트/범위/신뢰도/노이즈 필터 + 로컬(이웃) 포커스 + 고립보기 + 시간여행
+    // 노이즈 의심 판정(M12-① 추출 게이트와 동일 기준) — 2026-07-26 이전 저장분에 섞인 세션요약 인용/표/헤더를 사람이 골라보기 위함.
+    // [정정, 2026-09-01] extract.mjs와 동일 라벨 확장(AI·GPT 추가) — 4개 파일 동기화 유지.
+    const NOISE_RE = /^\*{0,2}(Claude|Assistant|AI|GPT|User|사용자|어시스턴트)\*{0,2}\s*[:：]|^#{1,6}\s|\|.*\|/i;
+    function isNoisy(m){ return NOISE_RE.test(String(m.content||'').trim()); }
+    let statTotal = 0, listLoading = false; const _memCache = {}; // 대량 대비: 전체 총계 + 목록 더보기 + 단건 캐시
+    let pageSize = 100; // 목록/타임라인/개요 초기 로드 개수(사용자 조절 가능, 브라우저에 저장돼 다음에 열어도 유지됨). 그래프 탭은 /api/graph 별도 사용, 영향 없음.
+    try { const _ps = Number(localStorage.getItem('obrain-pagesize')); if (_ps >= 1 && _ps <= 500) pageSize = _ps; } catch (e) {}
+    let pageSizeCustomMode = false; // "직접 입력…" 선택 시 숫자칸을 펼쳐두기 위한 UI 상태
+    let graphLimit = 600; // 그래프에 표시할 노드 상한(서버 클램프 50~2000, 기본 600과 동일)
+    try { const _gl = Number(localStorage.getItem('obrain-graphlimit')); if (_gl >= 50 && _gl <= 2000) graphLimit = _gl; } catch (e) {}
+    let graphLimitCustomMode = false;
+    let autoRefreshOn = true; // 자동 새로고침(폴링) 켜짐 여부
+    try { if (localStorage.getItem('obrain-autorefresh') === '0') autoRefreshOn = false; } catch (e) {}
+    let autoRefreshSec = 45; // 폴링 주기(초)
+    try { const _as = Number(localStorage.getItem('obrain-autorefresh-sec')); if (_as >= 10 && _as <= 300) autoRefreshSec = _as; } catch (e) {}
+    let selectedBackup = null; // 설정 탭에서 사용자가 고른 백업 파일명(복원 안내 개인화용) — 자동 파일교체는 하지 않음
+    const baseName = p => String(p||'').split(/[\\/]/).filter(Boolean).pop() || '(미지정)';
+    // 기억 1건 얻기 — 로드된 all에 없으면(상한 밖) 서버에서 id로 가져옴(대량 대비)
+    async function getMemById(id){ id=Number(id); const a=(all||[]).find(x=>x.id===id); if(a) return a;
+      if(_memCache[id]) return _memCache[id]; try{ const m=await get('/api/memory/'+id); _memCache[id]=m; return m; }catch{ return null; } }
+    // 개요 막대/행 헬퍼
+    function ovBar(c, label, v, max){ return `<div class="ov-bar"><span class="bl"><i style="background:${c}"></i>${esc(label)}</span><span class="bt"><span class="bf" style="background:${c};width:${Math.round(v/Math.max(1,max)*100)}%"></span></span><span class="bn">${v}</span></div>`; }
+    function ovHub(id, type, content, suffix){ return `<div class="ov-hub" data-id="${id}" tabindex="0" role="button">${pill(type)}<span class="hubt">${esc(String(content).slice(0,90))}</span><span class="hubn">${esc(suffix)}</span></div>`; }
+    async function loadMore(){ if(listLoading) return; listLoading=true;
+      try{ const next=await get('/api/memories?limit='+pageSize+'&offset='+all.length+(travelDate?'&at='+travelDate:''));
+        if(Array.isArray(next)&&next.length){ const seen=new Set(all.map(m=>m.id)); for(const m of next) if(!seen.has(m.id)) all.push(m); renderLists(); if(tab==='graph') drawGraph(); }
+      }catch{} finally{ listLoading=false; } }
+
+    /* 날짜 */
+    const pad = n => String(n).padStart(2,'0');
+    function parseDate(s){ if(!s) return null; const d=new Date(String(s).replace(' ','T')); return isNaN(d)?null:d; }
+    function relTime(s){ const d=parseDate(s); if(!d) return '날짜 미상';
+      const sec=Math.floor((Date.now()-d.getTime())/1000);
+      if(sec<60) return '방금'; if(sec<3600) return Math.floor(sec/60)+'분 전';
+      if(sec<86400) return Math.floor(sec/3600)+'시간 전';
+      const day=Math.floor(sec/86400); if(day===1) return '어제'; if(day<7) return day+'일 전';
+      return `${d.getFullYear()}.${pad(d.getMonth()+1)}.${pad(d.getDate())}`; }
+    function absTime(s){ const d=parseDate(s); return d?`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`:'-'; }
+    const dayKey = s => { const d=parseDate(s); return d?`${d.getFullYear()}.${pad(d.getMonth()+1)}.${pad(d.getDate())}`:'날짜 미상'; };
+
+    function impDots(n){ n=Math.max(0,Math.min(5,n|0)); let h='<span class="idots" title="중요도 '+n+'/5">';
+      for(let i=0;i<5;i++) h+=`<i class="idot${i<n?' on':''}"></i>`; return h+'</span>'; }
+    function pill(t){ const c=color(t); return `<span class="pill" style="background:${hexA(c,.14)};box-shadow:inset 0 0 0 1px ${hexA(c,.30)}"><i class="pdot" style="background:${c}"></i>${esc(t)}</span>`; }
+    function hl(text){ const safe=esc(text); if(!curQuery) return safe;
+      try { return safe.replace(new RegExp('('+curQuery.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<mark>$1</mark>'); } catch { return safe; } }
+
+    function sortFn(a,b){
+      if(sortMode==='old') return (a.created_at||'').localeCompare(b.created_at||'');
+      if(sortMode==='imp') return (b.importance||0)-(a.importance||0) || (b.id-a.id);
+      return (b.created_at||'').localeCompare(a.created_at||'') || (b.id-a.id);
+    }
+    function passesFilter(m){
+      if(activeType && m.type!==activeType) return false;
+      if(minImp && (m.importance||0) < minImp) return false;
+      if(projectFilter && (m.project||'')!==projectFilter) return false;
+      if(scopeFilter && (m.scope||'global')!==scopeFilter) return false;
+      if(lowConfOnly && !(m.confidence!=null && m.confidence<0.5)) return false; // 개요 카드 "검토하면 좋은 기억"과 동일 문턱(0.5)
+      if(noiseOnly && !isNoisy(m)) return false;
+      if(period!=='all'){ const d=parseDate(m.created_at); if(!d) return false; if((Date.now()-d.getTime())/86400000 > Number(period)) return false; }
+      return true;
+    }
+    function currentSet(){ const s = searchResults !== null ? searchResults : all; return s.filter(passesFilter).sort(sortFn); }
+    function renderLists(){ const s=currentSet(); renderList(s); renderTimeline(s); renderSubbar(); } // 목록/타임라인/서브바만
+    function renderAll(){ renderLists(); if(tab==='graph') drawGraph(); }
+
+    function renderList(mems){ const host=document.getElementById('rows');
+      if(!mems.length){ host.innerHTML=emptyState(); return; }
+      let html = mems.map(m => `
+        <div class="row${selectedIds.has(m.id)?' row-selected':''}" data-id="${m.id}" tabindex="0" role="button" aria-label="${esc(m.type)} 기억 열기">
+          <input type="checkbox" class="row-cb"${selectedIds.has(m.id)?' checked':''} tabindex="-1" aria-hidden="true">
+          ${pill(m.type)}
+          <div class="rc"><div class="rtext">${hl(m.content)}</div>
+            <div class="rmeta">${impDots(m.importance)}<span class="rtime" title="${esc(absTime(m.created_at))}">${esc(relTime(m.created_at))}</span><span class="src">${esc(m.source||'-')}</span></div>
+          </div></div>`).join('');
+      // 더 보기(대량 대비) — 검색 중이 아니고 아직 안 불러온 기억이 남았을 때만
+      if(searchResults===null && statTotal && all.length < statTotal){
+        html += `<button class="loadmore" id="loadMore">더 보기 · ${all.length} / ${statTotal}</button>`;
+      }
+      host.innerHTML = html;
+      const lm=host.querySelector('#loadMore'); if(lm) lm.addEventListener('click', loadMore);
+    }
+    function emptyState(){
+      if(searchResults !== null || activeType) return `<div class="empty"><div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></div><h4>결과가 없어요</h4><p>다른 검색어나 필터를 시도해 보세요.</p></div>`;
+      return `<div class="empty"><div class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg></div><h4>아직 기억이 없어요</h4><p>클로드코드에서 대화하고 세션을 끝내면, 결정·약속·금지 같은 내용이 여기에 자동으로 쌓입니다.</p></div>`;
+    }
+    function renderTimeline(mems){
+      const sorted=[...mems].sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||''));
+      const host=document.getElementById('tl');
+      if(!sorted.length){ host.innerHTML=emptyState(); return; }
+      let html='', lastDay='';
+      for(const m of sorted){ const day=dayKey(m.created_at);
+        if(day!==lastDay){ html+=`<div class="day">${esc(day)}</div>`; lastDay=day; }
+        const sup=rels.filter(r=>r.from_id===m.id && (r.type==='SUPERSEDES'||r.type==='CONTRADICTS'));
+        const note=sup.map(r=>`<div class="tlsup">↳ ${esc(REL[r.type].ko)}: ${esc(String(memShort(r.to_id)).slice(0,30))}</div>`).join('');
+        html+=`<div class="item" data-id="${m.id}" tabindex="0" role="button">${pill(m.type)}<span class="t">${hl(m.content)}</span></div>${note}`; }
+      host.innerHTML=html;
+    }
+
+    /* ── 개요/인사이트 (기존 데이터로 클라이언트 계산, 백엔드 변경 없음) ── */
+    function svgIco(k){ const p={
+        brain:'<path d="M8.5 3A3.5 3.5 0 0 0 5 6.5 3 3 0 0 0 5 12a3 3 0 0 0 1 5.5A3 3 0 0 0 9.5 21 2.5 2.5 0 0 0 12 18.5V5.5A2.5 2.5 0 0 0 9.5 3z"/><path d="M12 5.5A2.5 2.5 0 0 1 14.5 3 3.5 3.5 0 0 1 19 6.5 3 3 0 0 1 19 12a3 3 0 0 1-1 5.5A3 3 0 0 1 14.5 21 2.5 2.5 0 0 1 12 18.5"/>',
+        clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 1.8"/>',
+        link:'<path d="M9 17H7A5 5 0 0 1 7 7h2M15 7h2a5 5 0 0 1 0 10h-2M8 12h8"/>',
+        alone:'<circle cx="12" cy="8" r="3.4"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/>' }[k]||'';
+      return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`; }
+    async function renderOverview(){
+      const host=document.getElementById('ov'); if(!host) return;
+      let s; try{ s=await get('/api/stats'); }catch{ s=null; }
+      if(!s || !s.total){ host.innerHTML=`<div class="empty"><div class="ico">${svgIco('brain')}</div><h4>아직 보여줄 요약이 없어요</h4><p>클로드코드에서 대화하고 세션을 끝내면, 여기에 한눈에 보는 요약이 쌓입니다.</p></div>`; return; }
+      if(s.total) statTotal=s.total; // 목록 더보기 기준 갱신
+      const typeMax=Math.max(1,...TYPES.map(t=>s.byType[t]||0));
+      const typeBars=TYPES.filter(t=>s.byType[t]).map(t=>ovBar(color(t), t, s.byType[t]||0, typeMax)).join('');
+      const catE=Object.entries(s.byCategory||{}).sort((a,b)=>b[1]-a[1]).slice(0,8), catMax=Math.max(1,...catE.map(e=>e[1]));
+      const catBars=catE.map(([c,v])=>ovBar(CATCOLORS[c]||'#6B7280', c, v, catMax)).join('');
+      const hubHtml=(s.hubs&&s.hubs.length) ? s.hubs.map(h=>ovHub(h.id,h.type,h.content,(h.d)+' 연결')).join('')
+        : `<div class="ov-mut">아직 기억끼리 연결된 관계가 없어요. 그래프나 상세 패널에서 연결해 보세요.</div>`;
+      const accHtml=(s.topAccessed&&s.topAccessed.length) ? s.topAccessed.map(h=>ovHub(h.id,h.type,h.content,(h.access_count)+'회')).join('')
+        : `<div class="ov-mut">아직 자주 본 기억이 없어요. 기억을 열어보면 여기에 쌓여요.</div>`;
+      // 떨어진 소집단(연결된 컴포넌트 분석, 확정된 관계 기준 — 유사도선 제외) — 해석 없이 구조만 보여줌
+      const islandsHtml=(s.islands&&s.islands.length)
+        ? s.islands.map((c,i)=>`<div class="ov-mut" style="margin:${i?'12px':'0'} 0 4px">소집단 ${i+1} · ${c.size}개</div>`+c.members.map(m=>ovHub(m.id,m.type,m.content,'')).join('')).join('')
+        : `<div class="ov-mut">${s.relCount?'확정된 관계가 하나로 이어져 있어요 — 따로 떨어진 소집단이 없어요.':'아직 기억끼리 연결된 관계가 없어요.'}</div>`;
+      let projHtml='';
+      if(s.byProject && s.byProject.length>1){ const pm=Math.max(1,...s.byProject.map(p=>p.c));
+        projHtml=`<div class="ov-card"><h4 title="이 기억을 저장할 당시 작업 중이던 폴더 기준이에요 — 기억 내용과 다를 수 있어요">프로젝트별 기억</h4>${s.byProject.slice(0,8).map(p=>ovBar('#5B8CFF', baseName(p.project), p.c, pm)).join('')}</div>`; }
+      host.innerHTML=`
+        <div class="ov-grid">
+          <div class="ov-stat"><span class="ic">${svgIco('brain')}</span><div class="n">${s.total}</div><div class="l">전체 기억</div></div>
+          <div class="ov-stat"><span class="ic">${svgIco('clock')}</span><div class="n">${s.recent7}</div><div class="l">최근 7일 추가</div></div>
+          <div class="ov-stat"><span class="ic">${svgIco('link')}</span><div class="n">${s.relCount}</div><div class="l">기억 간 관계</div></div>
+          <div class="ov-stat ov-orphan" role="button" tabindex="0" title="그래프에서 연결 없는 기억만 보기"><span class="ic">${svgIco('alone')}</span><div class="n">${s.orphans}</div><div class="l">연결 없는 기억 →</div></div>
+        </div>
+        <div class="ov-row2">
+          <div class="ov-card"><h4>유형 분포</h4>${typeBars||'<div class="ov-mut">데이터 없음</div>'}</div>
+          <div class="ov-card"><h4>주제 분류 분포</h4>${catBars||'<div class="ov-mut">분류 정보 없음</div>'}</div>
+        </div>
+        <div class="ov-row2">
+          <div class="ov-card"><h4>가장 많이 연결된 기억</h4>${hubHtml}</div>
+          <div class="ov-card"><h4>자주 본 기억</h4>${accHtml}</div>
+        </div>
+        <div class="ov-card" title="확정된 관계로 이었을 때, 메인 그래프와 따로 떨어져 서로끼리만 연결된 무리가 있는지 보여줘요"><h4>떨어진 소집단</h4>${islandsHtml}</div>
+        ${projHtml}
+        <div class="ov-card" id="ov-dup"><h4>중복 후보</h4><div class="ov-mut">확인 중…</div></div>
+        <div class="ov-card" id="ov-relq"><h4>관계 제안</h4><div class="ov-mut">확인 중…</div></div>
+        ${s.lowConf?`<div class="ov-card"><h4>검토하면 좋은 기억</h4><div class="ov-mut">자동 추출 신뢰도가 낮은(50% 미만) 기억이 <b style="color:var(--text)">${s.lowConf}개</b> 있어요. 내용이 맞는지 한 번 확인해 보세요.</div></div>`:''}`;
+      host.querySelectorAll('.ov-hub[data-id]').forEach(el=>{ const open=async()=>{ const m=await getMemById(el.dataset.id); if(m) openDetail(m); };
+        el.addEventListener('click',open); el.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); open(); } }); });
+      const orphanCard=host.querySelector('.ov-orphan');
+      if(orphanCard){ const go=()=>{ orphanView=true; localFocus=null; showTab('graph'); };
+        orphanCard.addEventListener('click',go); orphanCard.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); go(); } }); }
+      renderDupCandidates();
+      renderRelQueue();
+    }
+    // 관계 제안 큐(M12-④) — 새 서버 API 없이 기존 /api/memory/:id/similar(단건 KNN, 대량에도 동작)와
+    // /api/relation(수동 연결)만 재사용. 연결 없는 기억을 1건씩 순회하며 사람이 종류를 확정(자동판정 금지, PRD 원칙).
+    // 범위는 '지금 불러온 기억'까지만(전수 아님) — 과대표시 방지, 설정 페이지에서 불러오기 개수를 늘리면 범위도 늘어남.
+    let relQueueIds=[], relQueueIdx=0;
+    function computeOrphanQueue(){
+      const linked=new Set(); for(const r of rels){ linked.add(r.from_id); linked.add(r.to_id); }
+      return (all||[]).filter(m=>!linked.has(m.id)).map(m=>m.id);
+    }
+    async function renderRelQueue(){
+      const host=document.getElementById('ov-relq'); if(!host) return;
+      try{ await refreshRels(); }catch{}
+      relQueueIds=computeOrphanQueue(); relQueueIdx=0;
+      if(!relQueueIds.length){ host.innerHTML=`<h4>관계 제안</h4><div class="ov-mut">지금 불러온 기억(${(all||[]).length}개) 안에서는 연결 없는 기억이 없어요.</div>`; return; }
+      await showNextRelSuggestion(host);
+    }
+    async function showNextRelSuggestion(host){
+      host = host || document.getElementById('ov-relq'); if(!host) return;
+      if(relQueueIdx>=relQueueIds.length){ host.innerHTML=`<h4>관계 제안</h4><div class="ov-mut">지금 불러온 범위의 고립 기억을 모두 확인했어요.</div>`; return; }
+      const id=relQueueIds[relQueueIdx];
+      const base=(all||[]).find(m=>m.id===id);
+      if(!base){ relQueueIdx++; return showNextRelSuggestion(host); }
+      let sug=[]; try{ sug=await get('/api/memory/'+id+'/similar'); }catch{ sug=[]; }
+      if(!Array.isArray(sug) || !sug.length){ relQueueIdx++; return showNextRelSuggestion(host); }
+      const top=sug[0];
+      const typeOpts=Object.keys(REL).map(k=>`<option value="${k}">${esc(REL[k].ko)}</option>`).join('');
+      host.innerHTML=`<h4>관계 제안 (${relQueueIdx+1}/${relQueueIds.length} 고립 기억)</h4>
+        <div class="ov-mut" style="margin-bottom:6px">연결 없는 기억과 비슷한 기억을 찾았어요. 정말 관계가 있으면 종류를 고르고 연결하세요.</div>
+        <div style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:6px"><b>고립 기억</b><br>${esc(String(base.content).slice(0,90))}</div>
+        <div style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:10px"><b>[${esc(top.type)}]</b> ${esc(String(top.content).slice(0,90))}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <select id="relqType" aria-label="관계 유형">${typeOpts}</select>
+          <button id="relqConnect" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--accent);color:#fff;cursor:pointer;font-size:13px">연결</button>
+          <button id="relqSkip" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:13px">건너뛰기</button>
+        </div>`;
+      host.querySelector('#relqSkip').addEventListener('click', ()=>{ relQueueIdx++; showNextRelSuggestion(host); });
+      host.querySelector('#relqConnect').addEventListener('click', async ()=>{
+        const type=host.querySelector('#relqType').value;
+        try{
+          const r=await fetch('/api/relation',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from_id:id,to_id:top.id,type})});
+          const j=await r.json();
+          if(!r.ok || !j.ok){ toast(j.error||'연결 실패','err'); return; }
+          await refreshRels(); toast('연결했어요','ok');
+          relQueueIdx++; showNextRelSuggestion(host);
+        }catch{ toast('연결 실패','err'); }
+      });
+    }
+    /* 중복 후보 — 탐지는 자동(읽기전용), 실제 정리는 사람이 내용을 보고 확인해야만 실행(PRD: 자동삭제 금지) */
+    async function renderDupCandidates(){
+      const host=document.getElementById('ov-dup'); if(!host) return;
+      let r; try{ r=await get('/api/duplicates'); }catch{ r=null; }
+      if(!r || r.skipped){ host.innerHTML=`<h4>중복 후보</h4><div class="ov-mut">${r&&r.reason?esc(r.reason):'확인할 수 없어요'}</div>`; return; }
+      if(!r.pairs.length){ host.innerHTML=`<h4>중복 후보</h4><div class="ov-mut">비슷한 기억이 발견되지 않았어요.</div>`; return; }
+      const cleanBtn = r.exact ? `<button id="dupCleanAllBtn" style="margin-bottom:8px;padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:12px">완전일치만 전부 한번에 정리</button>` : '';
+      host.innerHTML=`<h4>중복 후보 (${r.pairs.length}쌍)</h4><div class="ov-mut" style="margin-bottom:6px">클릭해서 내용을 비교하고 정리 여부를 직접 확인하세요.</div>`
+        +cleanBtn
+        +r.pairs.slice(0,10).map((p,i)=>`<div class="ov-hub" data-i="${i}" role="button" tabindex="0" style="cursor:pointer">
+          <div style="font-size:13px">${esc(String(p.a.content).slice(0,50))}</div>
+          <div style="font-size:11px;color:var(--muted);margin:2px 0">유사도 매우 높음 ↕</div>
+          <div style="font-size:13px">${esc(String(p.b.content).slice(0,50))}</div>
+        </div>`).join('');
+      host.querySelectorAll('[data-i]').forEach(el=>{
+        const open=()=>openMergeConfirm(r.pairs[Number(el.dataset.i)]);
+        el.addEventListener('click',open); el.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); open(); } });
+      });
+      const cb=document.getElementById('dupCleanAllBtn'); if(cb) cb.addEventListener('click', openDupCleanConfirm);
+    }
+    // 완전일치 중복 일괄 정리 — 판단 필요 없는(내용이 문자 그대로 같은) 경우만 대상, 확인모달+10초 undo는 그대로 유지.
+    function openDupCleanConfirm(){
+      _bdMode='dupclean';
+      document.getElementById('bd-title').textContent='완전히 같은 내용의 중복 기억 정리';
+      document.getElementById('bd-desc').innerHTML='내용이 문자 그대로 똑같은 중복만 찾아, 가장 오래된 것 하나만 남기고 정리합니다. 정리 전 자동 백업이 저장됩니다.<br><span style="color:var(--danger);font-weight:600">10초 안에 되돌리기가 가능해요.</span>';
+      const scrim=document.getElementById('bdScrim'); scrim.classList.add('open'); scrim.removeAttribute('aria-hidden');
+      setTimeout(()=>document.getElementById('bdDelConfirm').focus(),20);
+    }
+    async function execDupClean(){
+      closeBatchDelModal();
+      let res;
+      try{
+        const r=await fetch('/api/duplicates/clean-exact',{method:'POST'});
+        res=await r.json().catch(()=>({})); if(!r.ok) throw new Error(res.error||'서버 오류');
+      }catch(e){ toast('정리 실패: '+(e.message||''),'err'); return; }
+      const snaps=res.deleted||[];
+      if(!snaps.length){ toast('정리할 완전일치 중복이 없어요','ok'); return; }
+      all=[]; await softRefresh(); renderDupCandidates();
+      toast(`완전일치 중복 ${snaps.length}개를 정리했어요`,'ok', async()=>{
+        try{
+          for(const s of snaps){
+            const r2=await fetch('/api/memory',{method:'POST',headers:{'Content-Type':'application/json'},
+              body:JSON.stringify({content:s.content,type:s.type,importance:s.importance,source:s.source,confidence:s.confidence,project:s.project,scope:s.scope,category:s.category})});
+            const j2=await r2.json().catch(()=>({})); if(!r2.ok) continue;
+            const nid=j2.id;
+            for(const rel of (s.relations||[])){
+              try{ await fetch('/api/relation',{method:'POST',headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({from_id:rel.from_id===s.id?nid:rel.from_id,to_id:rel.to_id===s.id?nid:rel.to_id,type:rel.type})}); }catch{}
+            }
+          }
+          all=[]; await softRefresh(); renderDupCandidates(); toast('되돌렸어요','ok');
+        }catch{ toast('되돌리기 실패','err'); }
+      }, 10000);
+    }
+    function openMergeConfirm(pair){
+      const ov=document.createElement('div');
+      ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:200';
+      const btn=(act,label,extra)=>`<button data-act="${act}" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:13px;${extra||''}">${label}</button>`;
+      ov.innerHTML=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;max-width:520px;width:92%;max-height:80vh;overflow:auto">
+        <h3 style="margin:0 0 10px;font-size:16px">이 두 기억을 정리할까요?</h3>
+        <p style="color:var(--muted);font-size:13px;margin:0 0 12px">정리 전 자동 백업이 저장되고, 실행 후 10초 안에 되돌릴 수 있어요.</p>
+        <div style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px"><b>A (id ${pair.a.id})</b><br>${esc(pair.a.content)}</div>
+        <div style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:14px"><b>B (id ${pair.b.id})</b><br>${esc(pair.b.content)}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          ${btn('keepA','A만 남기기')}${btn('keepB','B만 남기기')}${btn('combine','둘 다 이어붙이기')}${btn('cancel','취소','margin-left:auto;border-color:var(--danger);color:var(--danger)')}
+        </div>
+      </div>`;
+      document.body.appendChild(ov);
+      ov.addEventListener('click', e=>{ if(e.target===ov) ov.remove(); });
+      ov.querySelectorAll('[data-act]').forEach(b=>b.addEventListener('click', async ()=>{
+        const act=b.dataset.act; ov.remove();
+        if(act==='cancel') return;
+        const keepId = act==='keepB' ? pair.b.id : pair.a.id;
+        const dropId = act==='keepB' ? pair.a.id : pair.b.id;
+        await doMerge(keepId, dropId, act==='combine' ? 'combine' : 'keep');
+      }));
+    }
+    async function doMerge(keepId, dropId, mode){
+      try{
+        const r=await fetch('/api/duplicates/merge',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({keepId,dropId,mode})});
+        const j=await r.json();
+        if(!r.ok||!j.ok){ toast(j.error||'정리 실패','err'); return; }
+        all=[]; await softRefresh(); renderDupCandidates();
+        toast('정리했어요', 'ok', async ()=>{
+          try{
+            await fetch('/api/memory',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:j.dropSnapshot.content,type:j.dropSnapshot.type,importance:j.dropSnapshot.importance,source:j.dropSnapshot.source,confidence:j.dropSnapshot.confidence,project:j.dropSnapshot.project,scope:j.dropSnapshot.scope,category:j.dropSnapshot.category})});
+            if(j.mode==='combine'){ await fetch('/api/memory/'+j.kept,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:j.keepOriginalContent})}); }
+            all=[]; await softRefresh(); renderDupCandidates();
+            toast('되돌렸어요','ok');
+          }catch{ toast('되돌리기 실패','err'); }
+        });
+      }catch{ toast('정리 실패','err'); }
+    }
+    function renderSubbar(){
+      const base = searchResults !== null ? searchResults : all;
+      const counts={}; for(const m of base) counts[m.type]=(counts[m.type]||0)+1;
+      const moreToLoad = searchResults===null && statTotal>base.length;
+      const allTitle = moreToLoad ? `지금까지 불러온 기억이에요(${base.length}/${statTotal}) — 아래로 스크롤해 '더 보기'를 누르면 더 불러와요` : '모든 기억 보기';
+      let html=`<button class="chip all${activeType===''?' on':''}" data-type="" title="${esc(allTitle)}"><span>전체</span><span class="cnt">${base.length}</span></button>`;
+      for(const t of TYPES){ const c=counts[t]||0; if(c===0 && activeType!==t) continue;
+        html+=`<button class="chip${activeType===t?' on':''}" data-type="${t}" title="${esc(t)} — ${esc(TYPE_DESC[t]||'')}"><i class="cdot" style="background:${color(t)}"></i><span>${esc(t)}</span><span class="cnt">${c}</span></button>`; }
+      html+=`<select class="sortsel" id="sortSel" aria-label="정렬">
+        <option value="new"${sortMode==='new'?' selected':''}>최신순</option>
+        <option value="old"${sortMode==='old'?' selected':''}>오래된순</option>
+        <option value="imp"${sortMode==='imp'?' selected':''}>중요도순</option></select>`;
+      html+=`<select class="sortsel" id="impSel" aria-label="중요도 필터">
+        <option value="0"${minImp===0?' selected':''}>중요도 전체</option>
+        <option value="3"${minImp===3?' selected':''}>★3 이상</option>
+        <option value="4"${minImp===4?' selected':''}>★4 이상</option>
+        <option value="5"${minImp===5?' selected':''}>★5</option></select>`;
+      html+=`<select class="sortsel" id="perSel" aria-label="기간 필터">
+        <option value="all"${period==='all'?' selected':''}>기간 전체</option>
+        <option value="7"${period==='7'?' selected':''}>최근 7일</option>
+        <option value="30"${period==='30'?' selected':''}>최근 30일</option></select>`;
+      html+=`<select class="sortsel" id="confSel" aria-label="신뢰도 필터" title="자동 추출 신뢰도가 낮은(50% 미만) 기억만 골라 보기 — 개요 탭 '검토하면 좋은 기억' 카드와 같은 기준">
+        <option value="0"${!lowConfOnly?' selected':''}>신뢰도 전체</option>
+        <option value="1"${lowConfOnly?' selected':''}>검토 필요만(50% 미만)</option></select>`;
+      html+=`<select class="sortsel" id="noiseSel" aria-label="노이즈 필터" title="세션요약 인용(Claude:/User:)·표·헤더가 섞여 잘못 저장된 것으로 의심되는 기억만 골라 보기(2026-07-26 이전 저장분에 존재 — 추출 게이트는 이후 수정됨)">
+        <option value="0"${!noiseOnly?' selected':''}>노이즈 필터 끔</option>
+        <option value="1"${noiseOnly?' selected':''}>노이즈 의심만</option></select>`;
+      // 프로젝트별 마지막 활동 시점 → 최근 활동순 정렬(활성=맨 위, 파기한 옛것은 시점으로 구분)
+      const projInfo={};
+      for(const m of (all||[])){ const p=m.project||''; if(!p) continue; const d=parseDate(m.created_at); const t=d?d.getTime():0;
+        if(!projInfo[p] || t>projInfo[p].t) projInfo[p]={ t, s:m.created_at }; }
+      const projects=Object.keys(projInfo).sort((a,b)=>projInfo[b].t-projInfo[a].t);
+      if(projects.length>1 || projectFilter){
+        html+=`<select class="sortsel" id="projSel" aria-label="프로젝트 필터" title="프로젝트로 거르기(최근 활동순) — 저장 당시 작업 폴더 기준, 기억 내용과 다를 수 있어요">`
+          +`<option value=""${projectFilter===''?' selected':''}>프로젝트 전체</option>`
+          + projects.map(p=>`<option value="${esc(p)}"${projectFilter===p?' selected':''}>${esc(baseName(p))} · ${esc(relTime(projInfo[p].s))}</option>`).join('')
+          + `</select>`;
+      }
+      html+=`<select class="sortsel" id="scopeSel" aria-label="범위 필터">
+        <option value=""${scopeFilter===''?' selected':''}>범위 전체</option>
+        <option value="global"${scopeFilter==='global'?' selected':''}>전역(global)</option>
+        <option value="project"${scopeFilter==='project'?' selected':''}>프로젝트(project)</option></select>
+      <input type="date" id="travelDate" class="sortsel" title="시간여행: 이 날짜 기준으로 살아있던 기억만 표시" value="${travelDate}" max="${new Date().toISOString().slice(0,10)}">`;
+      const shown=currentSet().length;
+      const filtered = !!(activeType || minImp || projectFilter || scopeFilter || period!=='all' || lowConfOnly || noiseOnly);
+      const info = searchResults!==null ? `검색 “${esc(curQuery)}” · ${shown}개`
+        : (filtered ? `${shown}개 표시 · 총 ${all.length}개` : `총 ${all.length}개의 기억`);
+      const sb=document.getElementById('subbar'); sb.innerHTML = html + `<span class="countinfo">${info}</span>`;
+      sb.querySelector('#sortSel').addEventListener('change', e=>{ sortMode=e.target.value; renderAll(); });
+      sb.querySelector('#impSel').addEventListener('change', e=>{ minImp=Number(e.target.value); renderAll(); });
+      sb.querySelector('#perSel').addEventListener('change', e=>{ period=e.target.value; renderAll(); });
+      sb.querySelector('#confSel').addEventListener('change', e=>{ lowConfOnly=e.target.value==='1'; renderAll(); });
+      sb.querySelector('#noiseSel').addEventListener('change', e=>{ noiseOnly=e.target.value==='1'; renderAll(); });
+      const _ps=sb.querySelector('#projSel'); if(_ps) _ps.addEventListener('change', e=>{ projectFilter=e.target.value; renderAll(); });
+      const _ss=sb.querySelector('#scopeSel'); if(_ss) _ss.addEventListener('change', e=>{ scopeFilter=e.target.value; renderAll(); });
+      const _td=sb.querySelector('#travelDate'); if(_td) _td.addEventListener('change', async e=>{ travelDate=e.target.value; all=[]; await softRefresh(); });
+    }
+
+    /* 설정 팝업(헤더 ⚙) — 목록/타임라인/개요 불러오기 개수. 탭과 무관하게 항상 여기서 접근 가능. */
+    function setTheme(mode){ // mode: 'light' | 'dark'
+      if(mode==='light') document.documentElement.dataset.theme='light'; else delete document.documentElement.dataset.theme;
+      try{ localStorage.setItem('obrain-theme', mode); }catch(e){}
+      applyThemeIcon();
+      if(tab==='graph') drawGraph();
+    }
+    function setIntroVisible(show){
+      const bar=document.getElementById('introbar'); if(bar) bar.hidden=!show;
+      try{ localStorage.setItem('obrain-intro-done', show?'0':'1'); }catch(e){}
+    }
+    function renderSettingsPage(){
+      const pageSizePreset=[50,100,200,500];
+      const pageSizeShowCustom = pageSizeCustomMode || !pageSizePreset.includes(pageSize);
+      const graphPreset=[300,600,1000,2000];
+      const graphShowCustom = graphLimitCustomMode || !graphPreset.includes(graphLimit);
+      const introShown = !document.getElementById('introbar')?.hidden;
+      const isLight = document.documentElement.dataset.theme==='light';
+      let html = `
+      <div class="set-group">
+        <h3>목록</h3>
+        <div class="set-row">
+          <div class="menu-label" style="padding:0 0 6px">한 번에 불러올 개수</div>
+          <select class="sortsel" id="pageSizeSel" aria-label="한 번에 불러올 개수" title="목록·타임라인·개요에 한 번에 불러올 기억 개수(1~500). 이 브라우저에 저장돼 다음에 열어도 유지돼요. 그래프 탭에는 적용되지 않음." style="width:100%">
+            <option value="50"${pageSize===50?' selected':''}>50개씩</option>
+            <option value="100"${pageSize===100?' selected':''}>100개씩</option>
+            <option value="200"${pageSize===200?' selected':''}>200개씩</option>
+            <option value="500"${pageSize===500?' selected':''}>500개(최대)</option>
+            <option value="custom"${pageSizeShowCustom?' selected':''}>직접 입력…</option></select>
+          ${pageSizeShowCustom?`<input type="number" id="pageSizeCustom" class="sortsel" min="1" max="500" step="1" value="${pageSize}" title="1~500 사이 원하는 개수" style="width:100%;margin-top:6px">`:''}
+        </div>
+      </div>
+
+      <div class="set-group">
+        <h3>그래프</h3>
+        <div class="set-row">
+          <div class="menu-label" style="padding:0 0 6px">표시할 노드 개수</div>
+          <select class="sortsel" id="graphLimitSel" aria-label="그래프에 표시할 노드 개수" title="그래프 탭에 표시할 기억 노드 상한(50~2000). 이 브라우저에 저장돼 다음에 열어도 유지돼요." style="width:100%">
+            <option value="300"${graphLimit===300?' selected':''}>300개</option>
+            <option value="600"${graphLimit===600?' selected':''}>600개(기본)</option>
+            <option value="1000"${graphLimit===1000?' selected':''}>1000개</option>
+            <option value="2000"${graphLimit===2000?' selected':''}>2000개(최대)</option>
+            <option value="custom"${graphShowCustom?' selected':''}>직접 입력…</option></select>
+          ${graphShowCustom?`<input type="number" id="graphLimitCustom" class="sortsel" min="50" max="2000" step="1" value="${graphLimit}" title="50~2000 사이 원하는 개수" style="width:100%;margin-top:6px">`:''}
+        </div>
+      </div>
+
+      <div class="set-group">
+        <h3>새로고침</h3>
+        <div class="set-row">
+          <label class="set-check"><input type="checkbox" id="autoRefreshChk"${autoRefreshOn?' checked':''}> 자동 새로고침 켜기</label>
+          <div class="set-desc">켜두면 일정 주기로 새 기억이 있는지 조용히 확인해 반영해요.</div>
+        </div>
+        <div class="set-row">
+          <div class="menu-label" style="padding:0 0 6px">주기(초)</div>
+          <input type="number" id="autoRefreshSecInput" class="sortsel" min="10" max="300" step="5" value="${autoRefreshSec}" title="10~300초 사이" style="width:100%">
+        </div>
+      </div>
+
+      <div class="set-group">
+        <h3>화면</h3>
+        <div class="set-row">
+          <div class="menu-label" style="padding:0 0 6px">테마</div>
+          <select class="sortsel" id="themeSel" aria-label="테마" style="width:100%">
+            <option value="dark"${!isLight?' selected':''}>어둡게</option>
+            <option value="light"${isLight?' selected':''}>밝게</option></select>
+        </div>
+      </div>
+
+      <div class="set-group">
+        <h3>백업</h3>
+        <div class="set-row">
+          <div class="set-desc">기억이 실수로 사라지는 걸 막기 위해, 서버를 시작할 때마다 자동으로 사본(스냅샷)을 남겨요. 최근 7개만 보관돼요.</div>
+          <div id="backupList" class="set-desc" style="margin-top:8px">불러오는 중…</div>
+          <button id="backupNowBtn" style="margin-top:8px">지금 백업 만들기</button>
+        </div>
+        <div class="set-row">
+          <div class="menu-label" style="padding:0 0 6px">문제가 생겼을 때 되돌리는 방법 (수동)</div>
+          <div class="set-desc" id="backupRestoreHelp">불러오는 중…</div>
+        </div>
+      </div>
+
+      <div class="set-group">
+        <h3>안내</h3>
+        <div class="set-row">
+          <label class="set-check"><input type="checkbox" id="introChk"${introShown?' checked':''}> 안내 배너 표시</label>
+          <div class="set-desc">상단의 "Codex 대화에서 자동으로 모은 기억이에요" 안내문을 다시 보이거나 숨겨요.</div>
+        </div>
+      </div>`;
+      const body=document.getElementById('settingsPage'); body.innerHTML=html;
+
+      body.querySelector('#pageSizeSel').addEventListener('change', async e=>{
+        if(e.target.value==='custom'){ pageSizeCustomMode=true; renderSettingsPage(); return; }
+        pageSizeCustomMode=false; pageSize=Number(e.target.value); try{ localStorage.setItem('obrain-pagesize', String(pageSize)); }catch(e){} renderSettingsPage(); all=[]; await softRefresh();
+      });
+      const _pgc=body.querySelector('#pageSizeCustom'); if(_pgc) _pgc.addEventListener('change', async e=>{
+        const n=Math.min(500,Math.max(1,Math.round(Number(e.target.value))||100));
+        pageSizeCustomMode=false; pageSize=n; try{ localStorage.setItem('obrain-pagesize', String(n)); }catch(e){} renderSettingsPage(); all=[]; await softRefresh();
+      });
+
+      body.querySelector('#graphLimitSel').addEventListener('change', async e=>{
+        if(e.target.value==='custom'){ graphLimitCustomMode=true; renderSettingsPage(); return; }
+        graphLimitCustomMode=false; graphLimit=Number(e.target.value); try{ localStorage.setItem('obrain-graphlimit', String(graphLimit)); }catch(e){} renderSettingsPage(); gData=null; await initGraph();
+      });
+      const _glc=body.querySelector('#graphLimitCustom'); if(_glc) _glc.addEventListener('change', async e=>{
+        const n=Math.min(2000,Math.max(50,Math.round(Number(e.target.value))||600));
+        graphLimitCustomMode=false; graphLimit=n; try{ localStorage.setItem('obrain-graphlimit', String(n)); }catch(e){} renderSettingsPage(); gData=null; await initGraph();
+      });
+
+      body.querySelector('#autoRefreshChk').addEventListener('change', e=>{
+        autoRefreshOn=e.target.checked; try{ localStorage.setItem('obrain-autorefresh', autoRefreshOn?'1':'0'); }catch(err){}
+      });
+      body.querySelector('#autoRefreshSecInput').addEventListener('change', e=>{
+        const n=Math.min(300,Math.max(10,Math.round(Number(e.target.value))||45));
+        autoRefreshSec=n; try{ localStorage.setItem('obrain-autorefresh-sec', String(n)); }catch(err){} renderSettingsPage(); restartPolling();
+      });
+
+      body.querySelector('#themeSel').addEventListener('change', e=>{ setTheme(e.target.value); });
+
+      body.querySelector('#introChk').addEventListener('change', e=>{ setIntroVisible(e.target.checked); });
+
+      body.querySelector('#backupNowBtn').addEventListener('click', async e=>{
+        const btn=e.target; btn.disabled=true; btn.textContent='만드는 중…';
+        try{ const r=await fetch('/api/backups',{method:'POST'}); const j=await r.json();
+          if(!r.ok||!j.ok) throw new Error(j.error||'실패');
+          toast('백업을 만들었어요','ok'); await renderBackupList();
+        }catch{ toast('백업 만들기 실패','err'); }
+        finally{ btn.disabled=false; btn.textContent='지금 백업 만들기'; }
+      });
+      renderBackupList();
+    }
+
+    // 백업 목록 + 수동 복원 안내 — 읽기 전용(기존 데이터 무변경). PRD 05 §4 최소 요건.
+    // 선택 UI(2026-07-27 추가): 목록에서 백업 1개를 클릭하면 그 파일명이 반영된 안내로 개인화 + 이름 복사 버튼.
+    // 자동 파일교체(실제 DB 덮어쓰기)는 아직 만들지 않음 — 별도 승인 대상(위험도 높음, CHECKPOINT 참고).
+    async function renderBackupList(){
+      const list=document.getElementById('backupList'), help=document.getElementById('backupRestoreHelp');
+      if(!list) return;
+      let r; try{ r=await get('/api/backups'); }catch{ r=null; }
+      if(!r || !Array.isArray(r.items)){ list.textContent='불러오지 못했어요.'; if(help) help.textContent=''; return; }
+      if(!r.items.length){ list.textContent='아직 백업이 없어요(서버를 한 번 더 시작하면 생겨요).'; selectedBackup=null; }
+      else {
+        if(selectedBackup && !r.items.some(it=>it.file===selectedBackup)) selectedBackup=null;
+        const fmtSize = n => n<1024*1024 ? Math.round(n/1024)+'KB' : (n/1024/1024).toFixed(1)+'MB';
+        list.innerHTML = '보관된 백업 '+r.items.length+'개 (되돌리고 싶은 백업을 클릭해 선택하세요):<br>' + r.items.map(it => {
+          const sel = it.file===selectedBackup;
+          return '<button type="button" class="backup-item" data-file="'+esc(it.file)+'" style="display:block;width:100%;text-align:left;margin:4px 0;padding:6px 8px;border:1px solid var(--border);border-radius:6px;cursor:pointer;font:inherit;color:inherit;background:'+(sel?'var(--accent-weak)':'transparent')+';box-shadow:'+(sel?'inset 0 0 0 1px var(--accent)':'none')+'">'
+            + esc(new Date(it.mtime).toLocaleString('ko-KR')) + ' · ' + fmtSize(it.size) + ' · <code>'+esc(it.file)+'</code>'
+            + (sel?' <b>(선택됨)</b>':'') + '</button>';
+        }).join('');
+        list.querySelectorAll('.backup-item').forEach(btn=>{
+          btn.addEventListener('click', ()=>{ selectedBackup = (btn.dataset.file===selectedBackup) ? null : btn.dataset.file; renderBackupList(); });
+        });
+      }
+      if(!help) return;
+      if(!selectedBackup){
+        help.innerHTML = '위 목록에서 되돌리고 싶은 백업을 먼저 클릭해 선택하면, 그 파일 이름이 반영된 단계별 안내가 나와요.';
+        return;
+      }
+      help.innerHTML =
+        '선택한 백업: <code>'+esc(selectedBackup)+'</code> <button type="button" id="backupCopyNameBtn" style="margin-left:6px">파일 이름 복사</button><br><br>'+
+        '1) 오브레인 서버를 끕니다(터미널 창에서 Ctrl+C 또는 창 닫기).<br>'+
+        '2) 이 폴더를 엽니다: <code>'+esc(r.dir||'')+'</code><br>'+
+        '3) 그 안에서 <code>'+esc(selectedBackup)+'</code> 파일을 복사해 둡니다.<br>'+
+        '4) <code>data</code> 폴더 안 <code>obrain.db</code> 이름을 <code>obrain.db.old</code>로 바꿔 남겨둡니다(만약을 위해).<br>'+
+        '5) 복사해 둔 <code>'+esc(selectedBackup)+'</code> 파일 이름을 <code>obrain.db</code>로 바꿔 <code>data</code> 폴더에 넣습니다.<br>'+
+        '6) 서버를 다시 시작합니다(<code>npm start</code>).';
+      const cbtn=document.getElementById('backupCopyNameBtn');
+      if(cbtn) cbtn.addEventListener('click', async ()=>{
+        try{ await navigator.clipboard.writeText(selectedBackup); toast('파일 이름을 복사했어요','ok'); }
+        catch{ toast('복사하지 못했어요','err'); }
+      });
+    }
+
+    /* 관계(사용자 수동 연결) */
+    async function refreshRels(){ try{ rels = await get('/api/relations'); }catch{ rels=[]; } if(!Array.isArray(rels)) rels=[]; }
+    const memShort = id => { const x=all.find(a=>a.id===id); return x ? x.content : ('#'+id); };
+    function renderRelations(m){
+      const host=document.getElementById('d-rel'); if(!host) return;
+      const mine=rels.filter(r=>r.from_id===m.id||r.to_id===m.id);
+      const list = mine.length ? mine.map(r=>{ const out=r.from_id===m.id; const other=out?r.to_id:r.from_id;
+        const meta=REL[r.type]||{ko:r.type,c:'#8B93A3'};
+        return `<div class="relrow"><span class="reltag" style="color:${meta.c};background:${hexA(meta.c,.14)}">${out?'→':'←'} ${esc(meta.ko)}</span><span class="rt" title="${esc(memShort(other))}">${esc(memShort(other))}</span><button class="x" data-rel="${r.id}" aria-label="관계 삭제">✕</button></div>`;
+      }).join('') : `<div class="relempty">아직 연결된 관계가 없어요.</div>`;
+      const opts=all.filter(a=>a.id!==m.id).map(a=>`<option value="${a.id}">[${esc(a.type)}] ${esc(String(a.content).slice(0,28))}</option>`).join('');
+      const typeOpts=Object.keys(REL).map(k=>`<option value="${k}">${esc(REL[k].ko)}</option>`).join('');
+      const firstType=Object.keys(REL)[0];
+      host.innerHTML = `<h4>이 기억의 관계</h4>${list}
+        <div class="reladd">
+          <select id="relType" aria-label="관계 유형">${typeOpts}</select>
+          <select id="relTarget" aria-label="대상 기억">${opts}</select>
+          <button id="relAdd">연결</button>
+          <span class="hint" id="relHint">${esc(REL[firstType].desc)}</span>
+        </div>
+        <div class="relsug" style="margin-top:10px">
+          <div style="font-size:.82rem;color:var(--muted);margin-bottom:6px">🔗 관련 있을 만한 기억 — 눌러서 대상 선택 → 종류 고르고 '연결'</div>
+          <div id="relSugList" style="display:flex;flex-direction:column;gap:5px"><span style="color:var(--muted);font-size:.82rem">불러오는 중…</span></div>
+        </div>`;
+      const sel=host.querySelector('#relType');
+      if(sel) sel.addEventListener('change',()=>{ const h=host.querySelector('#relHint'); if(h) h.textContent=(REL[sel.value]||{}).desc||''; });
+      loadRelSuggest(m.id);
+    }
+
+    // 관계 '대상' 추천 — 기존 임베딩 유사도 상위 기억. 클릭하면 대상 드롭다운에 채워줌(종류는 사용자가 선택).
+    async function loadRelSuggest(id){
+      const box=document.getElementById('relSugList'); if(!box) return;
+      let sug=[]; try{ sug=await get('/api/memory/'+id+'/similar'); }catch{ sug=[]; }
+      if(!Array.isArray(sug)||!sug.length){ box.innerHTML='<span style="color:var(--muted);font-size:.82rem">추천할 비슷한 기억이 아직 없어요.</span>'; return; }
+      box.innerHTML = sug.map(s=>`<button type="button" class="sugchip" data-sid="${s.id}" style="text-align:left;border:1px solid var(--border);background:var(--surface2);color:var(--text);border-radius:8px;padding:6px 9px;cursor:pointer;font-size:.84rem;line-height:1.35"><b style="color:var(--accent)">[${esc(s.type)}]</b> ${esc(String(s.content).slice(0,46))}</button>`).join('');
+      box.querySelectorAll('.sugchip').forEach(btn=>btn.addEventListener('click',()=>{
+        const sid=btn.getAttribute('data-sid');
+        const tg=document.getElementById('relTarget'); if(!tg) return;
+        if(!tg.querySelector('option[value="'+sid+'"]')){ const o=document.createElement('option'); o.value=sid; o.textContent=btn.textContent.trim(); tg.appendChild(o); }
+        tg.value=sid;
+        box.querySelectorAll('.sugchip').forEach(b=>b.style.outline='');
+        btn.style.outline='2px solid var(--accent)';
+        const h=document.getElementById('relHint'); if(h) h.textContent='대상 선택됨 → 종류 고르고 "연결"을 누르세요.';
+        const rt=document.getElementById('relType'); if(rt) rt.focus();
+      }));
+    }
+
+    /* 최단경로 찾기 — PRD 05 §6 그래프 분석. 새 검색 UI 없이 기존 select 패턴(#relTarget과 동일) 재사용 */
+    function renderPathFinder(m){
+      const host=document.getElementById('d-path'); if(!host) return;
+      const opts=all.filter(a=>a.id!==m.id).map(a=>`<option value="${a.id}">[${esc(a.type)}] ${esc(String(a.content).slice(0,28))}</option>`).join('');
+      host.innerHTML = `<h4>다른 기억까지 경로 찾기</h4>
+        <div class="reladd">
+          <select id="pathTarget" aria-label="목적지 기억">${opts}</select>
+          <button id="pathFind">찾기</button>
+        </div>
+        <div id="pathResult" style="margin-top:8px"></div>`;
+      const btn=host.querySelector('#pathFind');
+      if(btn) btn.addEventListener('click',()=>findPathTo(m.id));
+    }
+    async function findPathTo(fromId){
+      const sel=document.getElementById('pathTarget'); if(!sel) return;
+      const toId=Number(sel.value);
+      const box=document.getElementById('pathResult'); if(box) box.innerHTML='<span style="color:var(--muted);font-size:.82rem">찾는 중…</span>';
+      let r; try{ r=await get('/api/path?from='+fromId+'&to='+toId); }catch{ r={found:false,path:[]}; }
+      if(!box) return;
+      if(!r || !r.found || !r.path.length){ box.innerHTML='<div class="relempty">연결된 경로가 없어요.</div>'; setPathHighlight([]); return; }
+      box.innerHTML = r.path.map((p,i)=>`<div class="relrow"><span class="reltag" style="color:var(--accent);background:var(--accent-weak,rgba(0,0,0,.08))">${i+1}단계</span><span class="rt" title="${esc(p.content)}">${esc(String(p.content).slice(0,60))}</span></div>`).join('');
+      setPathHighlight(r.path.map(p=>p.id));
+    }
+    function setPathHighlight(ids){ // 경로 전체를 그래프에서 강조 — 기존 highlightNodes/highlightLinks 재사용, 새 렌더러 없음
+      lastPathIds = (ids && ids.length) ? ids.slice() : null; // 그래프 탭 전환 시 재적용용(버그: drawGraph가 무조건 지움)
+      highlightNodes.clear(); highlightLinks.clear();
+      if(ids && ids.length && G){
+        for(const id of ids) highlightNodes.add(id);
+        const idSet=new Set(ids);
+        for(const l of G.graphData().links){ const s=lid(l.source),t=lid(l.target);
+          if(idSet.has(s)&&idSet.has(t)) highlightLinks.add(l); }
+      }
+      try{ _reapply(); }catch{}
+    }
+
+    /* 상세 패널 + 포커스 관리 */
+    let curDetail=null, lastFocused=null;
+    function openDetail(m){ curDetail=m; lastFocused=document.activeElement; exitEditUI();
+      document.getElementById('d-title').textContent = `${m.type} 기억`;
+      const meta=document.getElementById('d-meta');
+      meta.innerHTML=[pill(m.type),
+        m.category?`<span class="tag"><i style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${CATCOLORS[m.category]||'#6B7280'};margin-right:5px"></i>${esc(m.category)}</span>`:'',
+        `<span class="tag">중요도 <b style="color:var(--star)">${'★'.repeat(Math.max(0,Math.min(5,m.importance|0)))||'-'}</b></span>`,
+        `<span class="tag">출처 ${esc(m.source||'-')}</span>`,
+        m.confidence!=null?`<span class="tag">신뢰도 ${Math.round(m.confidence*100)}%</span>`:'',
+        (m.access_count? `<span class="tag">조회 ${m.access_count}회</span>`:''),
+        `<span class="dtime">${esc(absTime(m.created_at))}</span>`].filter(Boolean).join('');
+      document.getElementById('d-content').textContent=m.content;
+      renderRelations(m);
+      renderPathFinder(m);
+      if(m.id) fetch('/api/memory/'+m.id+'/touch',{method:'POST'}).then(()=>{ m.access_count=(m.access_count||0)+1; gData=null; }).catch(()=>{}); // 조회 기록(글로우)
+      document.getElementById('detail').classList.add('open');
+      document.getElementById('detail').removeAttribute('aria-hidden');
+      document.getElementById('scrim').classList.add('open');
+      document.getElementById('d-close').focus();
+      // 어느 세션(창)에서 저장됐는지 — 여러 창을 동시에 쓸 때 출처 구분(실패해도 무시, 있으면만 붙임)
+      if(m.session_id){
+        fetch('/api/session/'+m.session_id).then(r=>r.ok?r.json():null).then(s=>{
+          if(!s || curDetail!==m) return;
+          const meta=document.getElementById('d-meta');
+          if(meta && !meta.querySelector('.tag-session'))
+            meta.insertAdjacentHTML('beforeend', `<span class="tag tag-session" title="이 기억이 저장된 창(세션)의 작업 폴더 — 기존 '출처'(추출방식)와는 다른 정보">저장 세션 ${esc(baseName(s.project))} · ${esc(relTime(s.ended_at))}</span>`);
+        }).catch(()=>{});
+      }
+    }
+    function closeDetail(){ exitEditUI(); const d=document.getElementById('detail');
+      d.classList.remove('open'); document.getElementById('scrim').classList.remove('open');
+      curDetail=null;
+      // 포커스가 #detail 안에 남아있으면 aria-hidden이 브라우저에 의해 거부됨(포커스 먼저 이동 필수)
+      if(lastFocused && lastFocused.focus){ try{ lastFocused.focus(); }catch(e){} }
+      else if(document.activeElement && document.activeElement.blur){ try{ document.activeElement.blur(); }catch(e){} }
+      d.setAttribute('aria-hidden','true'); }
+
+    /* 상세 편집(내용/유형/중요도) — 저장 시 서버에서 재redact+재임베딩 */
+    function exitEditUI(){ const b=document.getElementById('d-body'); if(b) b.classList.remove('editing'); const f=document.getElementById('d-edit-form'); if(f) f.classList.remove('on'); }
+    function enterEdit(){ if(!curDetail) return; const m=curDetail;
+      const ta=document.getElementById('e-content'); ta.value=m.content||'';
+      document.getElementById('e-type').innerHTML=TYPES.map(t=>`<option value="${t}"${t===m.type?' selected':''}>${esc(t)} — ${esc(TYPE_DESC[t]||'')}</option>`).join('');
+      document.getElementById('e-imp').innerHTML=[1,2,3,4,5].map(n=>`<option value="${n}"${n===(m.importance|0)?' selected':''}>${'★'.repeat(n)} (${n})</option>`).join('');
+      document.getElementById('d-body').classList.add('editing'); document.getElementById('d-edit-form').classList.add('on');
+      setTimeout(()=>ta.focus(),20); }
+    async function saveEdit(){ if(!curDetail) return; const m=curDetail;
+      const content=document.getElementById('e-content').value.trim();
+      const type=document.getElementById('e-type').value, importance=Number(document.getElementById('e-imp').value);
+      if(!content){ toast('내용을 입력하세요','err'); return; }
+      const btn=document.getElementById('e-save'), prev=btn.textContent; btn.disabled=true; btn.textContent='저장 중…';
+      try{
+        const r=await fetch('/api/memory/'+m.id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({content,type,importance})});
+        const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.error||'');
+        Object.assign(m,{content,type,importance,source:'user',confidence:1});
+        const a=all.find(x=>x.id===m.id); if(a) Object.assign(a,{content,type,importance,source:'user',confidence:1});
+        if(searchResults){ const s=searchResults.find(x=>x.id===m.id); if(s) Object.assign(s,{content,type,importance,source:'user',confidence:1}); }
+        gData=null; exitEditUI(); openDetail(m); renderAll();
+        toast(j.redactedHits ? `저장했어요 · 민감정보 ${j.redactedHits}곳 자동 가림` : '기억을 수정했어요','ok');
+      }catch(err){ toast('수정 실패'+(err.message?': '+err.message:''),'err'); btn.disabled=false; btn.textContent=prev; } }
+
+    /* 단건 삭제 — 배치삭제와 같은 확인모달+undo 경로로 통일(native confirm 제거, 사용자 확인 게이트는 유지) */
+    let _bdMode='batch', _bdSingleId=null;
+    function delMemory(){ if(!curDetail) return; openSingleDelModal(curDetail.id); }
+    function openSingleDelModal(id){
+      _bdMode='single'; _bdSingleId=id;
+      document.getElementById('bd-title').textContent='이 기억 삭제';
+      document.getElementById('bd-desc').innerHTML='이 기억을 삭제합니다. 삭제 전 자동 백업이 저장됩니다.<br><span style="color:var(--danger);font-weight:600">10초 안에 되돌리기가 가능해요.</span>';
+      const scrim=document.getElementById('bdScrim'); scrim.classList.add('open'); scrim.removeAttribute('aria-hidden');
+      setTimeout(()=>document.getElementById('bdDelConfirm').focus(),20);
+    }
+    async function execSingleDelete(){
+      closeBatchDelModal();
+      const id=_bdSingleId; if(!id) return;
+      const m=all.find(x=>x.id===id) || (curDetail&&curDetail.id===id?curDetail:null);
+      if(!m){ toast('삭제 대상을 찾을 수 없어요','err'); return; }
+      const snap={ content:m.content, type:m.type||'지식', importance:m.importance||3, source:m.source||'user', confidence:m.confidence??1, project:m.project||null,
+        scope:m.scope||'global', category:m.category||null,
+        relations:rels.filter(r=>r.from_id===id||r.to_id===id) };
+      try{ const r=await fetch('/api/memory/'+id,{method:'DELETE'}); if(!r.ok) throw 0; }
+      catch{ toast('삭제하지 못했어요(서버 확인)','err'); return; }
+      all=all.filter(x=>x.id!==id); if(searchResults!==null) searchResults=searchResults.filter(x=>x.id!==id);
+      rels=rels.filter(r=>r.from_id!==id&&r.to_id!==id);
+      if(statTotal>0) statTotal--;
+      gData=null; closeDetail(); renderAll();
+      toast('기억을 삭제했어요','ok', async()=>{
+        try{
+          const r=await fetch('/api/memory',{method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({content:snap.content,type:snap.type,importance:snap.importance,source:snap.source,confidence:snap.confidence,project:snap.project,scope:snap.scope,category:snap.category})});
+          const j=await r.json().catch(()=>({})); if(!r.ok) throw 0;
+          const nid=j.id;
+          for(const rel of snap.relations){
+            try{ await fetch('/api/relation',{method:'POST',headers:{'Content-Type':'application/json'},
+              body:JSON.stringify({from_id:rel.from_id===id?nid:rel.from_id,to_id:rel.to_id===id?nid:rel.to_id,type:rel.type})}); }catch{}
+          }
+          await softRefresh(); toast('되돌렸어요','ok');
+        }catch{ toast('되돌리기 실패','err'); }
+      }, 10000);
+    }
+    /* ── 일괄삭제 선택 모드 ── */
+    function updateSelToolbar(){
+      const n=selectedIds.size;
+      const countEl=document.getElementById('selCount'), cancelEl=document.getElementById('selCancel'),
+            delEl=document.getElementById('selDel'), toggleEl=document.getElementById('selModeBtn'),
+            allEl=document.getElementById('selAll');
+      countEl.style.display=selMode?'inline':'none'; countEl.textContent=n+'개 선택됨';
+      cancelEl.style.display=selMode?'inline-block':'none';
+      delEl.style.display=selMode?'inline-block':'none'; delEl.disabled=n===0;
+      delEl.title = n===0 ? '삭제할 기억을 먼저 선택하세요' : '선택한 기억 삭제';
+      if(toggleEl) toggleEl.style.display=selMode?'none':'';
+      if(allEl){
+        allEl.style.display=selMode?'inline-block':'none';
+        const visible=currentSet(); const allSelected=visible.length>0 && visible.every(m=>selectedIds.has(m.id));
+        allEl.textContent=allSelected?'전체 해제':'전체 선택';
+        allEl.title=`지금 필터에 보이는 ${visible.length}개를 한번에 ${allSelected?'선택 해제':'선택'}`;
+      }
+    }
+    // 필터된 것 전체 선택 — 노이즈/저신뢰 필터로 걸러낸 다수 기억을 손으로 한 개씩 안 눌러도 되게(M12 후속).
+    // 선택만 할 뿐 삭제는 기존 확인모달+10초 undo를 그대로 거침(자동삭제 아님, PRD 원칙 그대로 유지).
+    function toggleSelectAllVisible(){
+      const visible=currentSet();
+      const allSelected=visible.length>0 && visible.every(m=>selectedIds.has(m.id));
+      if(allSelected) visible.forEach(m=>selectedIds.delete(m.id));
+      else visible.forEach(m=>selectedIds.add(m.id));
+      renderList(currentSet()); updateSelToolbar();
+    }
+    function toggleSelMode(){
+      selMode=!selMode; if(!selMode) selectedIds.clear();
+      document.getElementById('view-list').classList.toggle('sel-mode',selMode);
+      updateSelToolbar(); renderList(currentSet());
+    }
+    function exitSelMode(){ selMode=false; selectedIds.clear();
+      document.getElementById('view-list').classList.remove('sel-mode');
+      updateSelToolbar(); renderList(currentSet()); }
+    function openBatchDelModal(){ if(!selectedIds.size) return;
+      _bdMode='batch';
+      document.getElementById('bd-title').innerHTML=`기억 <span id="bdCount">${selectedIds.size}</span>개 삭제`;
+      document.getElementById('bd-desc').innerHTML='선택한 기억을 삭제합니다. 삭제 전 자동 백업이 저장됩니다.<br><span style="color:var(--danger);font-weight:600">10초 안에 되돌리기가 가능해요.</span>';
+      const scrim=document.getElementById('bdScrim'); scrim.classList.add('open'); scrim.removeAttribute('aria-hidden');
+      setTimeout(()=>document.getElementById('bdDelConfirm').focus(),20); }
+    function closeBatchDelModal(){
+      const scrim=document.getElementById('bdScrim');
+      if(scrim.contains(document.activeElement)){ const back=_bdMode==='single'?document.getElementById('d-del'):(_bdMode==='dupclean'?document.getElementById('dupCleanAllBtn'):document.getElementById('selDel')); if(back) back.focus(); }
+      scrim.classList.remove('open'); scrim.setAttribute('aria-hidden','true'); }
+    async function execBatchDelete(){
+      closeBatchDelModal();
+      const ids=[...selectedIds];
+      const pairs=ids.map(id=>{ const m=all.find(x=>x.id===id)||{}; if(!m.content) return null;
+        return { id, content:m.content, type:m.type||'지식', importance:m.importance||3,
+          source:m.source||'user', confidence:m.confidence??1, project:m.project||null,
+          scope:m.scope||'global', category:m.category||null,
+          relations:rels.filter(r=>r.from_id===id||r.to_id===id) }; }).filter(Boolean);
+      exitSelMode();
+      let res;
+      try{
+        const r=await fetch('/api/memory/batch-delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids})});
+        res=await r.json().catch(()=>({})); if(!r.ok) throw new Error(res.error||'서버 오류');
+      }catch(e){ toast('삭제 실패: '+(e.message||''),'err'); return; }
+      const deleted=new Set(res.deleted||[]);
+      if(!deleted.size){ toast(res.failed?.length?'삭제하지 못했어요':'대상이 없어요','err'); return; }
+      all=all.filter(x=>!deleted.has(x.id));
+      if(searchResults!==null) searchResults=searchResults.filter(x=>!deleted.has(x.id));
+      rels=rels.filter(r=>!deleted.has(r.from_id)&&!deleted.has(r.to_id));
+      if(statTotal>0) statTotal-=deleted.size;
+      gData=null; closeDetail(); renderAll();
+      const failNote=res.failed?.length?` (${res.failed.length}개 실패)`:'';
+      toast(deleted.size+'개 삭제됨'+failNote,'ok', async()=>{
+        let ok=0, fail=0;
+        for(const p of pairs){
+          if(!deleted.has(p.id)) continue;
+          try{
+            const r=await fetch('/api/memory',{method:'POST',headers:{'Content-Type':'application/json'},
+              body:JSON.stringify({content:p.content,type:p.type,importance:p.importance,source:p.source,confidence:p.confidence,project:p.project,scope:p.scope,category:p.category})});
+            const j=await r.json().catch(()=>({})); if(!r.ok) throw 0;
+            const nid=j.id;
+            for(const rel of p.relations){
+              try{ await fetch('/api/relation',{method:'POST',headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({from_id:rel.from_id===p.id?nid:rel.from_id,to_id:rel.to_id===p.id?nid:rel.to_id,type:rel.type})}); }catch{}
+            }
+            ok++;
+          }catch{ fail++; }
+        }
+        await softRefresh();
+        toast(ok+'개 복원됨'+(fail?` (${fail}개 실패, 관계 일부 미복원 가능)`:''),'ok');
+      }, 10000);
+    }
+
+    async function copyDetail(){ if(!curDetail) return;
+      try { await navigator.clipboard.writeText(curDetail.content); toast('내용을 복사했어요','ok'); }
+      catch { toast('복사하지 못했어요','err'); } }
+
+    /* 내보내기 */
+    function exportData(fmt){
+      const data=[...all].sort(sortFn);
+      let text, name, mime;
+      if(fmt==='json'){ text=JSON.stringify(data,null,2); name='obrain-memories.json'; mime='application/json'; }
+      else { text='# O-Brain 기억 내보내기\n\n'+data.map(m=>`- **[${m.type}]** (★${m.importance||0} · ${absTime(m.created_at)} · ${m.source||'-'})\n  ${String(m.content).replace(/\n/g,'\n  ')}`).join('\n'); name='obrain-memories.md'; mime='text/markdown'; }
+      try {
+        const blob=new Blob([text],{type:mime+';charset=utf-8'}); const url=URL.createObjectURL(blob);
+        const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(()=>URL.revokeObjectURL(url),1500); toast('내보냈어요: '+name,'ok');
+      } catch(e){ toast('내보내기 실패','err'); }
+      document.getElementById('exportMenu').classList.remove('open');
+      document.getElementById('exportBtn').setAttribute('aria-expanded','false');
+    }
+
+    // 전체 백업 내보내기(서버) — 위 exportData()는 화면에 불러온 것만(최대 500건, 관계 미포함) 내보내는 반면,
+    // 이건 DB 전체(관계 포함)를 서버가 data/export/ 폴더에 파일로 직접 써서 큰 응답을 브라우저로 보내지 않음(프리징 방지).
+    async function exportFull(fmt){
+      try {
+        const r=await fetch('/api/export',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({format:fmt})});
+        const j=await r.json();
+        if(!r.ok||!j.ok) throw new Error(j.error||'실패');
+        toast('전체 백업 저장됨('+j.count+'건): '+j.file,'ok');
+      } catch(e){ toast('전체 백업 실패','err'); }
+      document.getElementById('exportMenu').classList.remove('open');
+      document.getElementById('exportBtn').setAttribute('aria-expanded','false');
+    }
+
+    /* 테마 */
+    const sunIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4.5"/><path d="M12 1v2.5M12 20.5V23M4.2 4.2l1.8 1.8M18 18l1.8 1.8M1 12h2.5M20.5 12H23M4.2 19.8 6 18M18 6l1.8-1.8"/></svg>';
+    const moonIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+    function applyThemeIcon(){ const light=document.documentElement.dataset.theme==='light';
+      document.getElementById('themeBtn').innerHTML = light?moonIcon:sunIcon; }
+    function toggleTheme(){ const light=document.documentElement.dataset.theme==='light'; setTheme(light?'dark':'light'); }
+    applyThemeIcon();
+
+    /* 첫 사용자 안내 배너 */
+    (function(){ let done=false; try{ done=localStorage.getItem('obrain-intro-done')==='1'; }catch(e){}
+      const bar=document.getElementById('introbar'); if(bar && !done) bar.hidden=false;
+      const x=document.getElementById('introX'); if(x) x.addEventListener('click',()=>{ if(bar) bar.hidden=true; try{localStorage.setItem('obrain-intro-done','1');}catch(e){} }); })();
+
+    /* 토스트 */
+    let toastTimer;
+    function toast(msg, kind, undoFn, dur){ const el=document.getElementById('toast'); el.className=''; el.textContent=msg;
+      if(undoFn){ const b=document.createElement('button'); b.className='undo'; b.textContent='되돌리기'; b.onclick=()=>{ el.classList.remove('show'); undoFn(); }; el.appendChild(b); }
+      void el.offsetWidth; el.classList.add('show'); if(kind) el.classList.add(kind);
+      clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove('show'), dur||(undoFn?10000:2200)); }
+
+    /* 탭 */
+    function showTab(t){ tab=t;
+      for(const x of ['overview','list','graph','timeline']){
+        document.getElementById('view-'+x).hidden=(x!==t);
+        const b=document.getElementById('t-'+x); b.classList.toggle('on', x===t); b.setAttribute('aria-selected', x===t?'true':'false'); }
+      document.getElementById('view-settings').hidden = (t!=='settings');
+      document.getElementById('subbar').style.display = (t==='overview'||t==='settings') ? 'none' : '';
+      if(t==='overview') renderOverview();
+      if(t==='graph') initGraph().then(()=>{ if(lastPathIds && lastPathIds.length) setPathHighlight(lastPathIds); }); // drawGraph()가 지운 경로 강조 재적용(버그 수정)
+      if(t==='settings') renderSettingsPage(); }
+
+    /* 검색 */
+    let timer; const qEl=document.getElementById('q');
+    qEl.addEventListener('input', e=>{ clearTimeout(timer); const q=e.target.value.trim();
+      document.getElementById('searchWrap').classList.toggle('has', !!q);
+      timer=setTimeout(async ()=>{ curQuery=q;
+        if(!q){ searchResults=null; searchHits=null; renderLists(); if(tab==='graph') _reapply(); return; }
+        const wrap=document.getElementById('searchWrap'); wrap.classList.add('loading');
+        try { searchResults=await get('/api/search?q='+encodeURIComponent(q)); } catch { searchResults=[]; }
+        finally { wrap.classList.remove('loading'); }
+        searchHits=new Set((searchResults||[]).map(m=>m.id));   // 그래프 강조 대상
+        renderLists(); if(tab==='graph') _reapply();            // 그래프면 일치 점 강조(목록으로 튕기지 않음). 목록/타임라인이면 이미 갱신됨
+      },240); });
+    document.getElementById('qClear').addEventListener('click',()=>{ qEl.value=''; curQuery=''; searchResults=null; searchHits=null;
+      document.getElementById('searchWrap').classList.remove('has'); renderLists(); if(tab==='graph') _reapply(); qEl.focus(); });
+
+    /* 클릭/키보드 위임 */
+    function openById(el){ const id=el.dataset.id; const m=all.find(x=>String(x.id)===id)||(searchResults||[]).find(x=>String(x.id)===id); if(m) openDetail(m); }
+    document.querySelector('main').addEventListener('click', e=>{
+      const chip=e.target.closest('.chip'); if(chip && !selMode){ activeType=chip.dataset.type||''; renderAll(); return; }
+      const el=e.target.closest('[data-id]'); if(el){
+        if(selMode && el.classList.contains('row')){
+          const id=Number(el.dataset.id);
+          if(selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id);
+          el.classList.toggle('row-selected',selectedIds.has(id));
+          const cb=el.querySelector('.row-cb'); if(cb) cb.checked=selectedIds.has(id);
+          updateSelToolbar(); return;
+        }
+        if(!selMode) openById(el);
+      }
+    });
+    document.querySelector('main').addEventListener('keydown', e=>{
+      if((e.key==='Enter'||e.key===' ')){ const el=e.target.closest('[data-id]'); if(el){ e.preventDefault(); openById(el); } } });
+    document.getElementById('subbar').addEventListener('click', e=>{ const chip=e.target.closest('.chip'); if(chip){ activeType=chip.dataset.type||''; renderAll(); } });
+    document.querySelectorAll('.segmented [data-tab]').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
+    document.getElementById('g2d').addEventListener('click',()=>setGraphMode('2d'));
+    document.getElementById('g3d').addEventListener('click',()=>setGraphMode('3d'));
+    document.getElementById('gColor').addEventListener('click',()=>{ colorBy = colorBy==='type'?'category':'type';
+      const b=document.getElementById('gColor'); b.classList.toggle('on', colorBy==='category'); b.textContent = colorBy==='category'?'유형색':'분류색';
+      drawGraph(); });
+    document.getElementById('d-focus').addEventListener('click',()=>{ if(!curDetail) return; localFocus=curDetail.id; closeDetail(); showTab('graph'); }); // 이 기억 중심(로컬) 보기
+    document.getElementById('gAll').addEventListener('click',()=>{ localFocus=null; orphanView=false; drawGraph(); }); // 전체 보기 복귀
+    document.getElementById('d-close').addEventListener('click',closeDetail);
+    document.getElementById('scrim').addEventListener('click',closeDetail);
+    document.getElementById('d-copy').addEventListener('click',copyDetail);
+    document.getElementById('d-del').addEventListener('click',delMemory);
+    document.getElementById('d-edit').addEventListener('click',enterEdit);
+    document.getElementById('e-save').addEventListener('click',saveEdit);
+    document.getElementById('e-cancel').addEventListener('click',exitEditUI);
+    // 관계 추가/삭제(이벤트 위임 — 상세 패널 내용이 매번 새로 그려져도 동작)
+    document.getElementById('d-rel').addEventListener('click', async e=>{
+      const del=e.target.closest('[data-rel]');
+      if(del){ const gone=rels.find(x=>String(x.id)===del.dataset.rel);
+        try{ const r=await fetch('/api/relation/'+del.dataset.rel,{method:'DELETE'}); if(!r.ok) throw 0;
+        await refreshRels(); if(curDetail) renderRelations(curDetail); gData=null; if(tab==='graph') drawGraph(); renderTimeline(currentSet());
+        toast('관계를 지웠어요','ok', gone?async()=>{ try{ await fetch('/api/relation',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from_id:gone.from_id,to_id:gone.to_id,type:gone.type})}); await refreshRels(); if(curDetail) renderRelations(curDetail); gData=null; if(tab==='graph') drawGraph(); renderTimeline(currentSet()); toast('되돌렸어요','ok'); }catch{ toast('되돌리기 실패','err'); } }:null);
+      }catch{ toast('관계 삭제 실패','err'); } return; }
+      if(e.target.id==='relAdd'){
+        if(!curDetail) return;
+        const type=document.getElementById('relType').value, to=Number(document.getElementById('relTarget').value);
+        if(!to){ toast('대상 기억을 고르세요','err'); return; }
+        try{ const r=await fetch('/api/relation',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from_id:curDetail.id,to_id:to,type})});
+          const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.error||'');
+          await refreshRels(); renderRelations(curDetail); gData=null; if(tab==='graph') drawGraph(); renderTimeline(currentSet()); toast('관계를 연결했어요','ok');
+        }catch(err){ toast('연결 실패'+(err.message?': '+err.message:''),'err'); }
+      }
+    });
+    document.getElementById('themeBtn').addEventListener('click',toggleTheme);
+    const exBtn=document.getElementById('exportBtn'), exMenu=document.getElementById('exportMenu');
+    exBtn.addEventListener('click', e=>{ e.stopPropagation(); const open=exMenu.classList.toggle('open'); exBtn.setAttribute('aria-expanded', open?'true':'false'); });
+    exMenu.querySelectorAll('[data-fmt]').forEach(b=>b.addEventListener('click',()=>exportData(b.dataset.fmt)));
+    exMenu.querySelectorAll('[data-full]').forEach(b=>b.addEventListener('click',()=>exportFull(b.dataset.full)));
+    document.addEventListener('click', e=>{ if(!e.target.closest('#exportBtn')&&!e.target.closest('#exportMenu')){ exMenu.classList.remove('open'); exBtn.setAttribute('aria-expanded','false'); } });
+    document.getElementById('settingsBtn').addEventListener('click', ()=>showTab('settings'));
+    document.getElementById('selModeBtn').addEventListener('click', toggleSelMode);
+    document.getElementById('selAll').addEventListener('click', toggleSelectAllVisible);
+    document.getElementById('selCancel').addEventListener('click', exitSelMode);
+    document.getElementById('selDel').addEventListener('click', openBatchDelModal);
+    document.getElementById('bdCancel').addEventListener('click', closeBatchDelModal);
+    document.getElementById('bdDelConfirm').addEventListener('click', ()=>{ if(_bdMode==='single') execSingleDelete(); else if(_bdMode==='dupclean') execDupClean(); else execBatchDelete(); });
+    document.getElementById('bdScrim').addEventListener('click', e=>{ if(e.target===document.getElementById('bdScrim')) closeBatchDelModal(); });
+
+    /* 단축키 */
+    document.addEventListener('keydown', e=>{
+      if(e.key==='Escape'){ exMenu.classList.remove('open'); closeDetail(); closeBatchDelModal(); if(selMode) exitSelMode(); }
+      else if(e.key==='/' && !/^(INPUT|TEXTAREA|SELECT)$/.test((e.target&&e.target.tagName)||'')){ e.preventDefault(); qEl.focus(); } });
+
+    /* ── 커맨드 팔레트 (⌘K / Ctrl+K) ── */
+    (function(){
+      const scrim=document.getElementById('cmdkScrim'), box=document.getElementById('cmdk'),
+            input=document.getElementById('cmdkInput'), listEl=document.getElementById('cmdkList');
+      let open=false, sel=0, items=[];
+      const CMDS=[
+        {t:'목록 보기', ico:'≡', hint:'탭', run:()=>showTab('list')},
+        {t:'그래프 보기', ico:'◔', hint:'탭', run:()=>showTab('graph')},
+        {t:'타임라인 보기', ico:'≣', hint:'탭', run:()=>showTab('timeline')},
+        {t:'설정 보기', ico:'⚙', hint:'탭', run:()=>showTab('settings')},
+        {t:'밝게 / 어둡게 전환', ico:'◐', hint:'테마', run:()=>toggleTheme()},
+        {t:'JSON으로 내보내기', ico:'⤓', hint:'내보내기', run:()=>exportData('json')},
+        {t:'마크다운으로 내보내기', ico:'⤓', hint:'내보내기', run:()=>exportData('md')},
+        {t:'JSON 전체 백업(서버 저장)', ico:'⤓', hint:'내보내기', run:()=>exportFull('json')},
+        {t:'마크다운 전체 백업(서버 저장)', ico:'⤓', hint:'내보내기', run:()=>exportFull('md')},
+      ];
+      function render(q){
+        q=(q||'').trim().toLowerCase();
+        const cmds=CMDS.filter(c=>!q || c.t.toLowerCase().includes(q));
+        const mems=q ? (all||[]).filter(m=>String(m.content).toLowerCase().includes(q)).slice(0,8)
+                     : (all||[]).slice(0,5);
+        items=[]; let html='';
+        if(cmds.length){ html+='<div class="cmdk-sec">명령</div>';
+          cmds.forEach(c=>{ const i=items.length; items.push({type:'cmd',run:c.run});
+            html+=`<div class="cmdk-item" data-i="${i}" role="option"><span class="ci-ico">${c.ico}</span><span class="ci-t">${esc(c.t)}</span><span class="ci-hint">${esc(c.hint)}</span></div>`; }); }
+        if(mems.length){ html+=`<div class="cmdk-sec">기억 ${q?'검색':'최근'}</div>`;
+          mems.forEach(m=>{ const i=items.length; items.push({type:'mem',m}); const c=color(m.type);
+            html+=`<div class="cmdk-item" data-i="${i}" role="option"><span class="ci-pill" style="color:${c};background:${hexA(c,.15)}">${esc(m.type)}</span><span class="ci-t">${esc(String(m.content).slice(0,84))}</span></div>`; }); }
+        listEl.innerHTML = (cmds.length||mems.length) ? html : '<div class="cmdk-empty">결과가 없어요</div>';
+        sel=0; mark();
+      }
+      function mark(){ const els=[...listEl.querySelectorAll('.cmdk-item')]; els.forEach((el,i)=>el.classList.toggle('sel',i===sel));
+        const cur=els[sel]; if(cur) cur.scrollIntoView({block:'nearest'}); }
+      function exec(i){ const it=items[i]; if(!it) return; close(); if(it.type==='cmd') it.run(); else openDetail(it.m); }
+      function openP(){ open=true; scrim.classList.add('open'); box.classList.add('open'); box.removeAttribute('aria-hidden'); input.value=''; render(''); setTimeout(()=>input.focus(),20); }
+      function close(){ open=false; scrim.classList.remove('open'); box.classList.remove('open');
+        input.blur(); // 포커스가 box 안(검색창)에 남아있으면 aria-hidden이 브라우저에 의해 거부됨
+        box.setAttribute('aria-hidden','true'); }
+      input.addEventListener('input', e=>render(e.target.value));
+      listEl.addEventListener('click', e=>{ const el=e.target.closest('[data-i]'); if(el) exec(Number(el.dataset.i)); });
+      listEl.addEventListener('mousemove', e=>{ const el=e.target.closest('[data-i]'); if(el){ sel=Number(el.dataset.i); mark(); } });
+      scrim.addEventListener('click', close);
+      document.addEventListener('keydown', e=>{
+        if((e.key==='k'||e.key==='K') && (e.metaKey||e.ctrlKey)){ e.preventDefault(); open?close():openP(); return; }
+        if(!open) return;
+        if(e.key==='Escape'){ e.preventDefault(); e.stopImmediatePropagation(); close(); }
+        else if(e.key==='ArrowDown'){ e.preventDefault(); sel=Math.min(sel+1,items.length-1); mark(); }
+        else if(e.key==='ArrowUp'){ e.preventDefault(); sel=Math.max(sel-1,0); mark(); }
+        else if(e.key==='Enter'){ e.preventDefault(); exec(sel); }
+      }, true);
+    })();
+
+    /* ── 목록 키보드 내비 (↑/↓ · j/k) ── */
+    (function(){
+      const sec=document.getElementById('view-list');
+      sec.addEventListener('keydown', e=>{
+        if(!/^(ArrowDown|ArrowUp|j|k)$/.test(e.key)) return;
+        const rows=[...document.querySelectorAll('#rows .row')]; if(!rows.length) return;
+        const cur=document.activeElement.closest? document.activeElement.closest('.row'):null;
+        let idx=rows.indexOf(cur);
+        if(e.key==='ArrowDown'||e.key==='j') idx=Math.min(idx+1,rows.length-1);
+        else idx=Math.max(idx-1,0);
+        if(idx<0) idx=0;
+        e.preventDefault(); rows[idx].focus();
+      });
+    })();
+
+    /* ── 그래프 ── */
+    let gMode='2d', gData=null, G=null;
+    let highlightNodes=new Set(), highlightLinks=new Set();
+    let lastPathIds=null; // 마지막으로 찾은 경로(그래프 탭 전환 시 drawGraph()가 강조를 지우는 것 재적용용)
+    let searchHits=null, _reapply=()=>{};                 // 검색 강조 대상(없으면 null) / 그래프 재착색 함수
+    const EMPTY=new Set();
+    const lid = e => (typeof e==='object'&&e)?e.id:e;
+    const effHi = () => highlightNodes.size ? highlightNodes : (searchHits || EMPTY); // hover 우선, 없으면 검색
+    // 테마별 그래프 색(라이트/다크 모두 가독) — '항상 다크' 철회, 테마를 따라감
+    function gTheme(){
+      const light=document.documentElement.dataset.theme==='light';
+      return light
+        ? { host:'radial-gradient(circle at 50% 35%, #ffffff 0%, #e9edf4 78%)', hi:'rgba(47,107,255,.95)',
+            label:'#243042', labelDim:'rgba(36,48,66,.30)', stroke:'rgba(15,23,42,.22)', strokeDim:'rgba(15,23,42,.06)',
+            linkBase:'rgba(90,105,130,.34)', linkDim:'rgba(90,105,130,.10)', dim3d:'#c4ccd8',
+            tip:'background:#ffffff;border:1px solid #d3dae3;color:#0f172a',
+            tipShadow:'0 14px 32px -14px rgba(15,23,42,.20), 0 4px 10px rgba(15,23,42,.08)' }
+        : { host:'radial-gradient(circle at 50% 38%, #11161f 0%, #0B0D11 70%)', hi:'rgba(150,180,255,.95)',
+            label:'#D7DEEA', labelDim:'rgba(231,235,242,.32)', stroke:'rgba(255,255,255,.28)', strokeDim:'rgba(255,255,255,.05)',
+            linkBase:'rgba(120,135,160,.3)', linkDim:'rgba(110,122,145,.08)', dim3d:'#39414f',
+            tip:'background:#11151c;border:1px solid #2C3340;color:#E7EBF2',
+            tipShadow:'0 16px 40px -14px rgba(0,0,0,.55), 0 4px 12px rgba(0,0,0,.30)' };
+    }
+    function graphSet(){
+      if(!gData) return {nodes:[],links:[],edgeMode:''};
+      let nodes, links;
+      if(orphanView){                                                          // 고립: '사용자 관계'가 없는 노드만(개요 정의와 일치 — 유사도선은 제외)
+        const deg={}; for(const l of gData.links){ if(l.rel){ deg[lid(l.source)]=1; deg[lid(l.target)]=1; } }
+        nodes=gData.nodes.filter(n=>!deg[n.id]); links=[];
+        return { nodes, links, edgeMode:gData.edgeMode };
+      }
+      if(localFocus!=null && gData.nodes.some(n=>n.id===localFocus)){          // 로컬: 그 기억 + 직접 연결만
+        const keep=new Set([localFocus]);
+        for(const l of gData.links){ const s=lid(l.source),t=lid(l.target); if(s===localFocus) keep.add(t); if(t===localFocus) keep.add(s); }
+        nodes=gData.nodes.filter(n=>keep.has(n.id));
+        links=gData.links.filter(l=>keep.has(lid(l.source))&&keep.has(lid(l.target)));
+      } else if(activeType || minImp || period!=='all' || projectFilter || scopeFilter || lowConfOnly || noiseOnly){      // 필터: 노드 자체 필드로(대량 대비, all 의존 X)
+        nodes=gData.nodes.filter(passesFilter);
+        const keep=new Set(nodes.map(n=>n.id));
+        links=gData.links.filter(l=>keep.has(lid(l.source))&&keep.has(lid(l.target)));
+      } else { return gData; }                                                // 필터/포커스 없음 → 기존 그대로
+      return { nodes, links, edgeMode:gData.edgeMode };
+    }
+    function openGraphNode(n){ getMemById(n.id).then(m=>openDetail(m||{id:n.id,type:n.type,importance:n.importance||Math.round(n.val||1),content:n.name,category:n.category,access_count:n.access,created_at:n.created_at,project:n.project,confidence:n.confidence,source:'-'})); }
+    function setGraphHighlight(nodeId){ // hover(마우스)·a11y 포커스(키보드) 공용 강조 로직 — PRD §14 키보드 동등 기능
+      lastPathIds=null; // hover/포커스가 경로 강조보다 우선(경로 재적용 예약 취소)
+      highlightNodes.clear(); highlightLinks.clear();
+      if(nodeId!=null && G){ highlightNodes.add(nodeId);
+        for(const l of G.graphData().links){ const s=lid(l.source),t=lid(l.target);
+          if(s===nodeId||t===nodeId){ highlightLinks.add(l); highlightNodes.add(s); highlightNodes.add(t); } } }
+      _reapply();
+      if(gMode==='2d'){ const el=document.getElementById('graphHost'); if(el) el.style.cursor = nodeId!=null?'pointer':''; }
+    }
+    function renderGraphA11yList(nodes){ // 캔버스는 포커스 불가 → 오프스크린 버튼 목록으로 동일 조작(열기) 제공
+      const wrap=document.getElementById('graphA11y'); if(!wrap) return;
+      wrap.innerHTML = nodes.map(n=>{
+        const m=all.find(x=>x.id===n.id)||{};
+        const imp=Math.max(1,Math.min(5,m.importance||Math.round(n.val||1)));
+        const label=`${n.type||''}${n.category?' · '+n.category:''} · ${String(n.name||'').slice(0,60)} · 중요도 ${imp}`;
+        return `<button type="button" class="ga11y-item" data-id="${n.id}">${esc(label)}</button>`;
+      }).join('');
+    }
+    document.getElementById('graphA11y').addEventListener('click', e=>{
+      const b=e.target.closest('.ga11y-item'); if(!b||!gData) return;
+      const n=gData.nodes.find(x=>String(x.id)===b.dataset.id); if(n) openGraphNode(n); });
+    document.getElementById('graphA11y').addEventListener('focusin', e=>{
+      const b=e.target.closest('.ga11y-item'); if(b) setGraphHighlight(Number(b.dataset.id)); });
+    document.getElementById('graphA11y').addEventListener('focusout', e=>{
+      const b=e.target.closest('.ga11y-item'); if(b) setGraphHighlight(null); });
+
+    async function initGraph(){
+      if(!gData){
+        const el=document.getElementById('graphHost');
+        if(el) el.innerHTML='<div class="spinner"></div>';
+        let d=null, ok=false;
+        try{ const r=await fetch('/api/graph?limit='+graphLimit); d=await r.json(); ok = r.ok && d && Array.isArray(d.nodes); }catch(e){ ok=false; }
+        if(ok){ gData=d; }
+        else if(el){
+          el.innerHTML='<div class="empty"><div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></div><h4>그래프를 불러오지 못했어요</h4><p>서버 연결을 확인하고 다시 시도해 보세요.</p><button class="loadmore" id="graphRetry" style="max-width:160px;margin:14px auto 0">다시 시도</button></div>';
+          const rb=document.getElementById('graphRetry'); if(rb) rb.addEventListener('click', ()=>{ gData=null; initGraph(); });
+          renderGraphA11yList([]);
+          return;
+        }
+      }
+      if(gData) drawGraph();
+    }
+    function setGraphMode(m){ gMode=m; document.getElementById('g2d').classList.toggle('on',m==='2d'); document.getElementById('g3d').classList.toggle('on',m==='3d'); drawGraph();
+      if(lastPathIds && lastPathIds.length) setPathHighlight(lastPathIds); } // 2D/3D 전환 시에도 drawGraph()가 지운 경로 강조 재적용
+    const nodeR = n => 3.7*Math.sqrt(Math.max(1, n.val||1));
+
+    function drawGraph(){
+      if(!gData){ initGraph(); return; }   // gData 미로딩 시 fetch 후 재호출(초기 로드/삭제/관계변경 자가치유 — null 역참조로 죽던 버그 방지)
+      const el=document.getElementById('graphHost'); el.innerHTML=''; highlightNodes.clear(); highlightLinks.clear();
+      const isNarrow=(el.clientWidth||999)<600; // 좁은 화면(모바일): 라벨 과밀로 가독성 붕괴 방지
+      renderNodeLegend();
+      { const _ga=document.getElementById('gAll'); if(_ga){ _ga.style.display = (localFocus!=null||orphanView) ? '' : 'none'; _ga.textContent = orphanView ? '전체 보기' : '전체 보기'; } }
+      const th=gTheme(); el.style.background=th.host;          // 그래프 배경도 테마 따라감
+      const data=graphSet();
+      renderGraphA11yList(data.nodes);
+      const capNote = (gData.total>gData.shown) ? ` · 전체 ${gData.total}개 중 상위 ${gData.shown}개` : '';
+      const modeNote = orphanView ? '고립 기억만 · ' : '';
+      // 성능가드로 유사도 연결이 생략된 상태(PRD §8.4)를 화면에 알림(05 §3 실패 가시화 — 은폐 금지)
+      const simpNote = gData.simplified ? ' · 유형별 연결(유사도 생략)' : '';
+      const gc = document.getElementById('gcount');
+      gc.textContent = data.nodes.length ? `${modeNote}노드 ${data.nodes.length} · 연결 ${data.links.length}${gData.relCount?` · 관계 ${gData.relCount}`:''}${capNote}${simpNote}` : (orphanView?'고립된 기억이 없어요 🎉':'');
+      gc.title = gData.simplified ? `기억이 ${gData.total}개로 많아, 성능 보호를 위해 의미 유사도 대신 유형(결정/제약 등)이 같은 기억끼리만 연결해 표시하고 있어요. 노이즈·중복 기억을 정리하면 다시 유사도 연결로 돌아올 수 있어요.` : '';
+      if(!data.nodes.length){ el.innerHTML='<div class="empty"><div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="6" r="2.4"/><circle cx="19" cy="9" r="2.4"/><circle cx="9" cy="18" r="2.4"/></svg></div><h4>그릴 기억이 없어요</h4><p>대화가 쌓이면 비슷한 기억끼리 선으로 이어진 지도가 그려집니다.</p></div>'; _reapply=()=>{}; return; }
+      const dim = n => { const h=effHi(); return h.size && !h.has(lid(n)); }; // hover 또는 검색으로 흐려짐
+      // 링크 색: 직접강조>파랑, hover중 비강조>흐림, 검색중 양끝일치면 보통/아니면 흐림, 평소 관계색/기본
+      const linkColorFn = l => highlightLinks.has(l) ? th.hi
+        : (highlightNodes.size ? th.linkDim
+        : (searchHits ? ((searchHits.has(lid(l.source))&&searchHits.has(lid(l.target))) ? (l.rel?relColor(l.rel):th.linkBase) : th.linkDim)
+        : (l.rel?relColor(l.rel):th.linkBase)));
+      const base = fg => fg.graphData(JSON.parse(JSON.stringify(data))).backgroundColor('rgba(0,0,0,0)')
+        .nodeRelSize(3.7).nodeVal(n=>Math.max(1,n.val||1)).linkCurvature(0.13)
+        .nodeLabel(n=>{ const m=all.find(x=>x.id===n.id)||{}; const imp=Math.max(1,Math.min(5,m.importance||Math.round(n.val||1)));
+          return `<div style="${th.tip};padding:10px 13px;border-radius:11px;box-shadow:${th.tipShadow};max-width:290px;font:12px/1.55 system-ui">`
+            +`<div style="font-weight:700;margin-bottom:3px">${esc(n.type)}${n.category?` <span style="opacity:.6">· ${esc(n.category)}</span>`:''}</div>`
+            +`<div style="opacity:.86;margin-bottom:6px">${esc(String(n.name).slice(0,96))}</div>`
+            +`<div style="color:#F0B046;font-size:11px;letter-spacing:1px">${'★'.repeat(imp)}<span style="opacity:.5;letter-spacing:0"> · 조회 ${n.access||0}회</span></div></div>`; })
+        .onNodeClick(openGraphNode);
+
+      if(gMode==='3d'){
+        const nc3=n=>dim(n)?th.dim3d:nodeColorOf(n);
+        const lw3=l=>highlightLinks.has(l)?2.4:(l.rel?1:.5);
+        const lp3=l=>highlightLinks.has(l)?3:0;
+        G=base(ForceGraph3D()(el)).nodeColor(nc3).nodeOpacity(.95).nodeResolution(18)
+          .linkColor(linkColorFn).linkWidth(lw3).linkOpacity(.55)
+          .linkDirectionalArrowLength(l=>l.rel?3:0).linkDirectionalArrowRelPos(1)
+          .linkDirectionalParticles(lp3).linkDirectionalParticleWidth(2).linkDirectionalParticleColor(()=>th.hi)
+          .onNodeHover(node=>setGraphHighlight(node?node.id:null));
+        _reapply=()=>{ try{ G.nodeColor(nc3).linkColor(linkColorFn).linkWidth(lw3).linkDirectionalParticles(lp3); }catch(e){} }; // 3D 자동리렌더X→재적용(hover·검색·a11y 포커스 공용)
+      } else {
+        G=base(ForceGraph()(el)).autoPauseRedraw(false)
+          .linkColor(linkColorFn)
+          .linkWidth(l=>highlightLinks.has(l)?2.6:(l.rel?1.8:.7))
+          .linkDirectionalArrowLength(l=>l.rel?3.4:0).linkDirectionalArrowRelPos(1)
+          .linkDirectionalParticles(l=>highlightLinks.has(l)?4:0).linkDirectionalParticleWidth(2.2).linkDirectionalParticleColor(()=>th.hi)
+          .nodeCanvasObjectMode(()=>'replace')
+          .nodeCanvasObject((n,ctx,scale)=>{
+            if(!Number.isFinite(n.x)||!Number.isFinite(n.y)) return; // 초기 프레임 좌표 미정 가드
+            const r=nodeR(n), c=nodeColorOf(n), faded=dim(n), hot=highlightNodes.has(n.id);
+            if(!faded){ const a=n.access||0; const gr=r+(hot?6:(3+Math.min(a,5)*0.8)); const gl=hot?.26:Math.min(.10+a*0.04,.30); ctx.beginPath(); ctx.arc(n.x,n.y,gr,0,2*Math.PI); ctx.fillStyle=hexA(c,gl); ctx.fill(); } // 글로우=조회수
+            const g=ctx.createRadialGradient(n.x-r*.35,n.y-r*.35,r*.1,n.x,n.y,r);
+            g.addColorStop(0, faded?hexA(c,.40):lighten(c,.45)); g.addColorStop(1, faded?hexA(c,.22):c);
+            ctx.beginPath(); ctx.arc(n.x,n.y,r,0,2*Math.PI); ctx.fillStyle=g; ctx.fill();
+            ctx.lineWidth=.8; ctx.strokeStyle=faded?th.strokeDim:th.stroke; ctx.stroke();
+            if(n.isOrphan&&!orphanView&&!faded){ ctx.setLineDash([2,3]); ctx.beginPath(); ctx.arc(n.x,n.y,r+2,0,2*Math.PI); ctx.strokeStyle=hexA('#9AA4B2',.55); ctx.lineWidth=1.2; ctx.stroke(); ctx.setLineDash([]); }
+            if(hot||(searchHits&&searchHits.has(n.id))||(isNarrow?(scale>2.2):(scale>1.35||(n.val||0)>=6))){ ctx.fillStyle=faded?th.labelDim:th.label;
+              ctx.font=`${(n.val||0)>=6?600:400} ${Math.max(3.2,11/scale)}px -apple-system,system-ui,sans-serif`; ctx.textAlign='center'; ctx.textBaseline='top';
+              ctx.fillText(String(n.name).slice(0, hot?28:16), n.x, n.y+r+3/scale+1.5); } })
+          .onNodeHover(node=>setGraphHighlight(node?node.id:null))
+          .onBackgroundClick(()=>setGraphHighlight(null));
+        _reapply=()=>{}; // 2D는 autoPauseRedraw=false → 매 프레임 자동 반영(검색/hover/a11y 포커스 즉시 보임)
+      }
+      if(gMode==='2d' && typeof G.linkLineDash==='function'){ G.linkLineDash(l=>l.rel==='CONTRADICTS'?[4,3]:null); } // 충돌=점선
+      try { G.d3Force('charge').strength(-330); G.d3Force('link').distance(72); } catch(e){}
+      // 캔버스를 컨테이너 크기에 정확히 고정(라이브러리 자동크기가 창 크기로 잡혀 영역 밖으로 잘리던 버그 방지)
+      if(el.clientWidth>0 && el.clientHeight>0){ try{ G.width(el.clientWidth).height(el.clientHeight); }catch(e){} }
+      // 컨테이너 크기 변화(창 리사이즈·모바일·탭 전환) 시 캔버스 동기화 + 재맞춤 — ResizeObserver 1회만 설치
+      if(!window._graphRO && typeof ResizeObserver!=='undefined'){
+        let _rt=null;
+        window._graphRO=new ResizeObserver(()=>{ const h=document.getElementById('graphHost'); if(!h||!G||!h.clientWidth) return;
+          try{ G.width(h.clientWidth).height(h.clientHeight); }catch(e){}
+          clearTimeout(_rt); _rt=setTimeout(()=>{ try{ G.zoomToFit(400,120); }catch(e){} },180); });
+        window._graphRO.observe(document.getElementById('graphHost'));
+      }
+      // 초기 자동맞춤: 물리 안정화(엔진 정지) 후 1회 — 너무 이른 zoomToFit로 과확대되는 문제 방지
+      let _fit=false; const _doFit=()=>{ if(_fit) return; _fit=true; try{ G.zoomToFit(600,120); }catch(e){} };
+      if(typeof G.onEngineStop==='function') G.onEngineStop(_doFit);
+      setTimeout(_doFit, 1600);
+    }
+    // 줌 컨트롤
+    document.getElementById('zin').addEventListener('click',()=>{ try{ gMode==='2d'?G.zoom(G.zoom()*1.4,250):G.zoomToFit(400,100); }catch(e){} });
+    document.getElementById('zout').addEventListener('click',()=>{ try{ gMode==='2d'?G.zoom(G.zoom()*0.72,250):G.zoomToFit(400,100); }catch(e){} });
+    document.getElementById('zfit').addEventListener('click',()=>{ try{ G.zoomToFit(500,120); }catch(e){} });
+
+    /* 초기 로드 */
+    Promise.all([ get('/api/memories?limit='+pageSize+'&offset=0'+(travelDate?'&at='+travelDate:'')), get('/api/relations').catch(()=>[]), get('/api/stats').catch(()=>null) ])
+      .then(([m,r,s])=>{ all=Array.isArray(m)?m:[]; rels=Array.isArray(r)?r:[]; if(s&&s.total) statTotal=s.total; renderAll(); if(tab==='graph') initGraph(); })
+      .catch(()=>{ document.getElementById('rows').innerHTML='<div class="empty"><h4>불러오지 못했어요</h4><p>서버가 켜져 있는지 확인해 주세요.</p></div>'; });
+
+    /* ── 자동 새로고침 — 새 기억/프로젝트를 하드새로고침 없이 반영(가벼운 폴링) ── */
+    let _healthSig = null, _refreshing = false;
+    async function softRefresh(){
+      if(_refreshing) return; _refreshing = true;
+      try{
+        const [m,r,s] = await Promise.all([ get('/api/memories?limit='+pageSize+'&offset=0'+(travelDate?'&at='+travelDate:'')), get('/api/relations').catch(()=>[]), get('/api/stats').catch(()=>null) ]);
+        all = Array.isArray(m)?m:[]; rels = Array.isArray(r)?r:[]; if(s && s.total!=null) statTotal = s.total;
+        gData = null;                                   // 그래프 재조회 유도(drawGraph 자가치유)
+        if(tab==='overview') renderOverview(); else renderAll();
+      } catch(e){} finally { _refreshing = false; }
+    }
+    function _busy(){ // 사용자 작업 중이면 자동 새로고침 보류(방해 방지)
+      const t=document.getElementById('toast');
+      return document.getElementById('detail').classList.contains('open')
+          || document.getElementById('cmdk').classList.contains('open')
+          || ((document.getElementById('q').value||'').trim() !== '')
+          || (t.classList.contains('show') && t.querySelector('button.undo') != null); // 되돌리기 대기 중엔 자동알림이 토스트를 덮어쓰지 않게(버그: 삭제 직후 자동갱신 알림이 되돌리기 버튼을 지워버림)
+    }
+    async function pollHealth(){
+      if(!autoRefreshOn) return;
+      if(document.visibilityState !== 'visible') return;
+      let h; try{ h = await get('/api/health'); } catch { return; }
+      const sig = (h.total ?? '') + ':' + (h.lastId ?? '');
+      if(_healthSig === null){ _healthSig = sig; return; }    // 최초엔 기준값만 기록
+      if(sig !== _healthSig){
+        if(_busy()) return;                                  // 작업 중이면 다음 기회에(기준값 유지 → 유휴 시 반영)
+        _healthSig = sig; await softRefresh();
+        toast('새 기억을 반영했어요','ok');
+      }
+    }
+    let _pollTimer = setInterval(pollHealth, autoRefreshSec*1000); // 기본 45초마다 가벼운 변경 확인(탭 보일 때만) — 설정에서 켜짐/주기 조절 가능
+    function restartPolling(){ clearInterval(_pollTimer); _pollTimer=setInterval(pollHealth, autoRefreshSec*1000); }
+    document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') pollHealth(); });
+    window.addEventListener('focus', pollHealth);             // 탭 복귀 시 즉시 확인(빠른 인식)
+    document.getElementById('refreshBtn').addEventListener('click', async ()=>{
+      await softRefresh();
+      try{ const h=await get('/api/health'); _healthSig=(h.total??'')+':'+(h.lastId??''); }catch{}
+      toast('새로고침했어요','ok');
+    });
+    get('/api/health').then(h=>{ _healthSig=(h.total??'')+':'+(h.lastId??''); }).catch(()=>{}); // 로드 시 기준값
+  </script>
+</body>
+</html>

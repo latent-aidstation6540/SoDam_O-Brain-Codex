@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "o-brain": {
+      "command": "node",
+      "args": [
+        "./scripts/start-mcp.mjs"
+      ]
+    }
+  }
+}

@@ -1,0 +1,228 @@
+// 세션 캡처 — transcript .jsonl → user/assistant text → 시크릿제거 → 추출 → 저장.
+import { readFileSync, existsSync, readdirSync, statSync, openSync, readSync, closeSync } from 'node:fs';
+import { dirname, parse as parsePath } from 'node:path';
+import { ruleExtract } from './extract.mjs';
+import { redact } from './redact.mjs';
+import { openDb } from './db.mjs';
+import { addMemory } from './store.mjs';
+
+// 대용량 transcript(수백MB~1GB+)를 통째로 메모리에 올리면 Node 문자열 한도(≈512MB) 초과로 크래시하거나
+// (실측: 967MB 파일에서 ERR_STRING_TOO_LONG), 그 전에도 동기 전체읽기가 수 초 걸려 Stop 훅 타임아웃
+// 위험(PRD 05 §1 "백그라운드 처리, 사용자 대기 없음" 위반). 파일 끝 20MB만 읽어 최근 대화를 안전하게
+// 확보한다(작은 파일은 기존과 동일하게 전체를 읽음 — 회귀 없음).
+const MAX_TAIL_BYTES = 20 * 1024 * 1024;
+function readTail(path, maxBytes = MAX_TAIL_BYTES) {
+  const size = statSync(path).size;
+  if (size <= maxBytes) return readFileSync(path, 'utf-8');
+  const fd = openSync(path, 'r');
+  try {
+    const buf = Buffer.alloc(maxBytes);
+    readSync(fd, buf, 0, maxBytes, size - maxBytes);
+    const text = buf.toString('utf-8');
+    const nl = text.indexOf('\n'); // 첫 줄은 경계에서 잘렸을 수 있으니 버림
+    return nl === -1 ? text : text.slice(nl + 1);
+  } finally { closeSync(fd); }
+}
+
+// 파일이 속한 '프로젝트 루트' = .git 가 있는 폴더(최우선·진짜 저장소 루트).
+// .git 이 없으면 package.json/.PRD 가 있는 가장 바깥 폴더로 폴백(app/ 같은 하위서 멈추지 않게).
+function projectRootOf(filePath, cache) {
+  let dir = dirname(filePath);
+  const fsRoot = parsePath(dir).root;
+  const start = dir;
+  if (cache && cache.has(start)) return cache.get(start);
+  let gitRoot = null, pkgRoot = null, d = dir;
+  for (let i = 0; i < 14 && d && d !== fsRoot; i++) {
+    try {
+      const e = readdirSync(d);
+      if (e.includes('.git')) { gitRoot = d; break; }                                  // git 루트 = 진짜 프로젝트 루트
+      if (!pkgRoot && (e.includes('package.json') || e.includes('.PRD'))) pkgRoot = d;  // 폴백 후보(계속 위로 탐색)
+    } catch {}
+    const up = dirname(d);
+    if (up === d) break;
+    d = up;
+  }
+  const root = gitRoot || pkgRoot;
+  if (cache) cache.set(start, root);
+  return root;
+}
+// transcript 공급자 탐지 — Codex와 Claude Code 로그를 모두 읽되 세션 도구를 정확히 기록한다.
+export function detectTranscriptHost(transcriptPath) {
+  try {
+    if (!transcriptPath || !existsSync(transcriptPath)) return 'unknown';
+    const lines = readTail(transcriptPath, 512 * 1024).split('\n').filter(Boolean).slice(-200);
+    let sawClaude = false;
+    for (const line of lines) {
+      let o; try { o = JSON.parse(line); } catch { continue; }
+      if (['session_meta', 'turn_context', 'response_item'].includes(o?.type)) return 'codex';
+      if (o?.type === 'user' || o?.type === 'assistant') sawClaude = true;
+    }
+    return sawClaude ? 'claude-code' : 'unknown';
+  } catch { return 'unknown'; }
+}
+
+function textFromContent(content, allowedTypes) {
+  if (typeof content === 'string') return content;
+  if (!Array.isArray(content)) return '';
+  return content
+    .filter(item => item && allowedTypes.has(item.type) && typeof item.text === 'string')
+    .map(item => item.text)
+    .join('\n');
+}
+
+// transcript .jsonl → user/assistant 텍스트 교환 목록.
+// Claude Code(message.content text)와 Codex(response_item payload.message input_text/output_text)를 함께 지원한다.
+export function parseTranscript(path, { tailLines = 600 } = {}) {
+  let lines = readTail(path).split('\n').filter(line => line.trim());
+  if (lines.length > tailLines) lines = lines.slice(-tailLines);
+  const exchanges = [];
+  for (const line of lines) {
+    let o; try { o = JSON.parse(line); } catch { continue; }
+    if (o?.type === 'user' || o?.type === 'assistant') {
+      const msg = o.message;
+      if (!msg) continue;
+      const text = textFromContent(msg.content, new Set(['text'])).trim();
+      if (text) exchanges.push({ role: msg.role || o.type, text });
+      continue;
+    }
+    if (o?.type === 'response_item' && o?.payload?.type === 'message') {
+      const msg = o.payload;
+      if (msg.role !== 'user' && msg.role !== 'assistant') continue;
+      const allowed = msg.role === 'user'
+        ? new Set(['input_text', 'text'])
+        : new Set(['output_text', 'text']);
+      const text = textFromContent(msg.content, allowed).trim();
+      if (text) exchanges.push({ role: msg.role, text });
+    }
+  }
+  return exchanges;
+}
+
+// 자동 프로젝트 탐지 — 실제 파일 작업 경로를 우선하고, Codex turn_context.cwd를 안전한 폴백으로 쓴다.
+export function detectProject(transcriptPath, fallback = null) {
+  try {
+    if (!transcriptPath || !existsSync(transcriptPath)) return fallback;
+    let lines = readTail(transcriptPath).split('\n').filter(line => line.trim());
+    if (lines.length > 1500) lines = lines.slice(-1500);
+    const skip = /[\\/]node_modules[\\/]|[\\/]AppData[\\/]|[\\/]\.git[\\/]|[\\/]Temp[\\/]|[\\/]O-Brain[\\/]app[\\/]data\b/i;
+    const cache = new Map(), rootCount = {};
+    let latestCwd = null;
+    const add = (value, weight) => {
+      if (!value || typeof value !== 'string') return;
+      const candidates = [value];
+      for (const match of value.matchAll(/[A-Za-z]:\\[^\"'\r\n<>|]+/g)) candidates.push(match[0].trim());
+      for (const path of candidates) {
+        if (!/^[A-Za-z]:\\/.test(path) || skip.test(path)) continue;
+        const root = projectRootOf(path, cache);
+        if (root) rootCount[root] = (rootCount[root] || 0) + weight;
+      }
+    };
+    const walkStrings = (value, weight, depth = 0) => {
+      if (depth > 5 || value == null) return;
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+          try { walkStrings(JSON.parse(trimmed), weight, depth + 1); return; } catch {}
+        }
+        add(value, weight);
+        return;
+      }
+      if (Array.isArray(value)) { for (const item of value) walkStrings(item, weight, depth + 1); return; }
+      if (typeof value === 'object') for (const item of Object.values(value)) walkStrings(item, weight, depth + 1);
+    };
+    for (const line of lines) {
+      let o; try { o = JSON.parse(line); } catch { continue; }
+      const content = o?.message?.content;
+      if (Array.isArray(content)) {
+        for (const item of content) if (item?.type === 'tool_use' && item.input) {
+          const weight = /^(Edit|Write|MultiEdit|NotebookEdit)$/.test(item.name || '') ? 3 : 1;
+          walkStrings(item.input, weight);
+        }
+      }
+      if (o?.type === 'turn_context' && typeof o?.payload?.cwd === 'string') latestCwd = o.payload.cwd;
+      if (o?.type === 'response_item' && ['custom_tool_call', 'function_call'].includes(o?.payload?.type)) {
+        walkStrings(o.payload, 2);
+      }
+    }
+    let best = null, bestCount = 0;
+    for (const [root, count] of Object.entries(rootCount)) if (count > bestCount) { best = root; bestCount = count; }
+    return best || latestCwd || fallback;
+  } catch { return fallback; }
+}
+
+// 주입/시스템 텍스트 제거 — 클로드코드 전사의 user 턴에는 훅 주입·system-reminder·스킬/페르소나 마커·코드펜스가
+// 섞여 들어온다. 이를 추출 대상에서 빼서 '실제 사용자가 타이핑한 결정'만 남긴다(노이즈 기억 방지).
+// 사용자의 진짜 발화는 이 마커들과 무관하므로 안전(과필터 위험 낮음).
+export function stripInjected(text) {
+  let t = String(text || '');
+  t = t.replace(/<(system-reminder|environment_context|app-context|skills_instructions|recommended_plugins|collaboration_mode|multi_agent_role|multi_agent_mode)[^>]*>[\s\S]*?<\/\1>/gi, ' '); // 호스트가 붙인 시스템/환경 블록
+  t = t.replace(/```[\s\S]*?```/g, ' ');                                 // 코드펜스(설정·로그 등)
+  t = t.replace(/<command-[\s\S]*?<\/command-[a-z]*>/gi, ' ');           // 슬래시명령 래퍼
+  // 로컬 명령(!... 실행) 결과·주의문구 래퍼 — command-*는 걸렀는데 local-command-*는 빠져있던 틈
+  // (2026-08-10 실측: 다른 프로젝트 실transcript 200개 재감사에서 <local-command-stdout>/<local-command-caveat>
+  // 태그 원문이 그대로 남아 close-miss 후보에 섞이는 것을 발견. CUES엔 안 걸려 저장까진 안 됐지만
+  // 방어선이 완전하지 않았음 — system-reminder·command-* 래퍼와 같은 이유로 동일하게 제거).
+  t = t.replace(/<local-command-[\s\S]*?<\/local-command-[a-z]*>/gi, ' ');
+  const drop = /(📌|O-Brain 자동 주입|O-Brain 로컬 기억|페르소나 v5|\[페르소나|persona_core|MANDATORY SKILL|hookSpecificOutput|additionalContext|UserPromptSubmit hook|SessionStart hook|SessionEnd hook|Skill\()/i;
+  // 대화 인용 노이즈(2026-07-26 실DB 감사: 노이즈 표본 20/20이 이 형태) — 압축요약/전사에 박힌
+  // "**Claude:**"/"Assistant:"/"User:" 인용은 '지금 사용자가 한 말'이 아니라 세션 요약 조각이 user 턴에
+  // 섞여 들어온 것(2026-08-09 190개 실transcript 재검증: 인용 줄 25건 표본 전부 AI 자기서술·문서조각으로
+  // 확인, 과필터 없음). 줄 전체를 버림.
+  // [정정, 2026-09-01] extract.mjs와 동일 라벨 확장(AI·GPT 추가) — 4개 파일 동기화 유지.
+  const dropQuote = /^\*{0,2}(Claude|Assistant|AI|GPT|User|사용자|어시스턴트)\*{0,2}\s*[:：]/i;
+  // 헤딩 마커(#)는 줄 전체를 버리지 않고 마커만 제거 — 2026-08-09 190개 실transcript 재검증에서
+  // "비공개 저장소가 아니거나 확인할 수 없으면 commit/push 하지 마" 같은 사용자의 실제 지시문이
+  // "#"로 시작한다는 이유만으로 통째로 삭제되는 오탐(30/720건, 4.2%)을 확인. 순수 문서 헤딩(마커
+  // 제거 후 내용이 없거나 짧음)은 ruleExtract의 길이(6~160자)·CUES 매칭에서 자연히 걸러짐.
+  const headingPrefix = /^#{1,6}\s+/;
+  const dropTableRow = /\|.*\|/;
+  t = t.split('\n')
+    .filter(line => !drop.test(line))
+    .map(line => line.replace(headingPrefix, ''))
+    .filter(line => {
+      const trimmed = line.trim();
+      return !dropQuote.test(trimmed) && !dropTableRow.test(trimmed);
+    }).join('\n');         // 주입 마커·인용·표 든 줄 제거(헤딩은 마커만 제거)
+  return t.replace(/[ \t]{2,}/g, ' ').trim();
+}
+
+export async function captureSession({ transcriptPath, projectPath, tool } = {}) {
+  // 입력 검증(방어) — 실제 .jsonl 파일만 읽음(임의 파일 읽기 차단)
+  if (!transcriptPath || !String(transcriptPath).endsWith('.jsonl') || !existsSync(transcriptPath)) {
+    return { exchanges: 0, candidates: 0, saved: [] };
+  }
+  const exchanges = parseTranscript(transcriptPath);
+  const sessionTool = tool || detectTranscriptHost(transcriptPath);
+  // 시크릿은 '추출(=AI 전송 가능) 전'에 제거 — 보안 발견사항 반영.
+  for (const ex of exchanges) {
+    ex.text = redact(ex.text).clean;
+    if (ex.role === 'user') ex.text = stripInjected(ex.text); // 주입/시스템 텍스트 제거(노이즈 추출 방지)
+  }
+  const memories = ruleExtract(exchanges);
+  // 프로젝트 = 실제 편집한 파일 기준 자동 탐지(없으면 클로드코드 시작 폴더 cwd).
+  const project = detectProject(transcriptPath, projectPath || null);
+  const db = openDb();
+  // 세션 레코드 생성(PRD 02) — 기억의 출처 세션을 추적한다.
+  let session_id = null;
+  try {
+    const sessRow = db.prepare(
+      "INSERT INTO session(project, tool, ended_at) VALUES (?, ?, datetime('now'))"
+    ).run(project || null, sessionTool);
+    session_id = Number(sessRow.lastInsertRowid) || null;
+  } catch {}
+  // scope: project 탐지 시 'project', 없으면 'global' (PRD 02 확정: Phase 1은 전부 project)
+  const scope = project ? 'project' : 'global';
+  const saved = [];
+  for (const m of memories) {
+    // 후보 하나가 실패해도(빈 내용 등) 배치 전체가 중단되지 않도록 개별 방어(QA 실측 확인 —
+    // 기존엔 try/catch 없이 하나라도 던지면 이후 후보 전부 저장 안 됨).
+    try {
+      const r = await addMemory(db, { ...m, project, scope, session_id });
+      saved.push({ id: r.id, type: m.type, content: m.content });
+    } catch (e) {
+      console.error('[o-brain] 후보 저장 실패(건너뜀):', e?.message || e);
+    }
+  }
+  db.close();
+  return { exchanges: exchanges.length, candidates: memories.length, saved, project, session_id };
+}
