@@ -1,26 +1,30 @@
-[English](./README.en.md) · [HTML](./README.html) · [원본 프로젝트](https://github.com/sodam-ai/SoDam_O-Brain)
+[English](./README.en.md) · [HTML](./README.html) · [Codex 저장소](https://github.com/sodam-ai/SoDam_O-Brain-Codex) · [포팅 전 원본](https://github.com/sodam-ai/SoDam_O-Brain)
 
 # 소담 오브레인 Codex (SoDam O-Brain for Codex)
 
 O-Brain은 Codex 대화에서 사용자가 확정한 결정·제약·선호·지식을 **내 컴퓨터의 SQLite DB에 저장**하고, 다음 작업에서 관련 기억을 다시 보여주는 1인용 로컬 메모리 플러그인입니다. 2D/3D 그래프, 목록, 타임라인, 검색, 백업 화면도 함께 제공합니다.
 
-> 현재 문서는 로컬 포팅 폴더 `D:\AI_Dev_Work\2026y\26y_09m_16d_SoDam_O-Brain-Codex` 기준입니다. 이 Codex 포팅 저장소의 공개 GitHub 주소는 아직 지정되지 않았으므로 임의의 다운로드 주소를 적지 않았습니다.
+> 공식 소스 저장소: [github.com/sodam-ai/SoDam_O-Brain-Codex](https://github.com/sodam-ai/SoDam_O-Brain-Codex). 이 문서는 Codex 포팅판의 설치와 사용 방법을 설명합니다.
+
+> **“로컬에서 사용”한다는 말은 설치 파일도 개인 폴더에서만 받아야 한다는 뜻이 아닙니다.** 누구나 위 공식 GitHub 저장소에서 내려받아 설치하고, 실행과 기억 저장만 자신의 컴퓨터 안에서 합니다. 아래 명령에는 제작자의 개인 작업 경로가 들어가지 않습니다.
 
 ## 목차
 
 1. [무엇을 할 수 있나요?](#무엇을-할-수-있나요)
-2. [사전 준비물](#사전-준비물)
-3. [설치](#설치)
-4. [빠른 시작](#빠른-시작)
-5. [사용 방법](#사용-방법)
-6. [명령과 테스트](#명령과-테스트)
-7. [파일과 데이터 위치](#파일과-데이터-위치)
-8. [작동 흐름과 아키텍처](#작동-흐름과-아키텍처)
-9. [보안과 개인정보](#보안과-개인정보)
-10. [업데이트 내용](#업데이트-내용)
-11. [문제 해결](#문제-해결)
-12. [FAQ](#faq)
-13. [라이선스·저작권·상업적 사용](#라이선스저작권상업적-사용)
+2. [확인 범위와 지원 상태](#확인-범위와-지원-상태)
+3. [사전 준비물과 필요 프로그램](#사전-준비물과-필요-프로그램)
+4. [다운로드와 설치](#다운로드와-설치)
+5. [빠른 시작과 실행](#빠른-시작과-실행)
+6. [사용 방법](#사용-방법)
+7. [명령과 테스트](#명령과-테스트)
+8. [파일과 데이터 위치](#파일과-데이터-위치)
+9. [작동 흐름과 아키텍처](#작동-흐름과-아키텍처)
+10. [보안과 개인정보](#보안과-개인정보)
+11. [백업·내보내기·복구](#백업내보내기복구)
+12. [업데이트 내용](#업데이트-내용)
+13. [문제 해결](#문제-해결)
+14. [FAQ](#faq)
+15. [라이선스·저작권·상업적 사용](#라이선스저작권상업적-사용)
 
 ## 무엇을 할 수 있나요?
 
@@ -36,7 +40,21 @@ O-Brain은 Codex 대화에서 사용자가 확정한 결정·제약·선호·지
 
 O-Brain은 사용자의 모든 말을 무조건 저장하지 않습니다. “하기로 정했다”, “반드시”, “선호한다”처럼 확정 신호가 있는 사용자 문장을 규칙으로 선별합니다. 중요한 내용은 `$o-brain-remember`로 직접 저장할 수 있습니다.
 
-## 사전 준비물
+## 확인 범위와 지원 상태
+
+| 항목 | 현재 상태 |
+|---|---|
+| 주 사용 환경 | Windows 10/11 + Codex 앱/CLI |
+| 실제 검증 버전 | Node.js `v26.7.0`, npm `11.6.2`, Codex CLI `0.154.0` |
+| 네트워크 | 설치·의존성·최초 모델 다운로드에 필요. 기억 저장과 검색은 로컬 처리 |
+| 모바일 | 390px 너비 화면 표시를 확인했지만 서버가 같은 PC 전용이므로 휴대전화 원격 접속은 지원하지 않음 |
+| 로그인·계정 | O-Brain 자체 로그인과 계정 시스템 없음. Codex 사용 권한은 OpenAI 계정 영역 |
+| 외부 DB·결제 | O-Brain 전용 외부 DB와 결제 기능 없음 |
+| macOS/Linux | 사용자 폴더 기본값은 코드에 있으나 이 릴리스의 실제 설치·UI 흐름은 미확인 |
+
+확인한 범위와 미확인 범위를 나눠 적었습니다. “지원”은 현재 코드와 테스트에서 확인한 범위를 뜻하며, 모든 PC 조합을 보증한다는 뜻은 아닙니다.
+
+## 사전 준비물과 필요 프로그램
 
 - Windows 10/11 또는 Node.js 26.7.x를 실행할 수 있는 컴퓨터
 - **Node.js 26.7.x**와 npm 11.x
@@ -44,7 +62,18 @@ O-Brain은 사용자의 모든 말을 무조건 저장하지 않습니다. “�
 - 최초 `npm ci`와 임베딩 모델 다운로드 때의 인터넷 연결
 - 약 1GB 이상의 여유 공간 권장: Node 의존성과 로컬 임베딩 모델 캐시가 포함됩니다.
 
-확인 명령:
+처음 보는 용어:
+
+| 용어 | 쉬운 뜻 |
+|---|---|
+| 폴더 경로 | 파일 주소입니다. 예: `C:\Tools\SoDam_O-Brain-Codex` |
+| 명령 | PowerShell에 한 줄씩 입력하고 Enter를 누르는 글입니다. |
+| 플러그인 | Codex에 기능을 추가하는 설치 묶음입니다. |
+| 로컬 | 현재 컴퓨터 안에서 처리한다는 뜻입니다. |
+| DB(SQLite) | 기억을 한 파일에 정리하는 데이터베이스입니다. |
+| 포트 | 브라우저가 로컬 서버를 찾는 번호입니다. 기본값은 `7740`입니다. |
+
+확인 명령은 한 줄씩 실행합니다:
 
 ```powershell
 node --version
@@ -54,18 +83,67 @@ codex --version
 
 이 포팅을 검증한 버전은 Node.js `v26.7.0`, npm `11.6.2`, Codex CLI `0.154.0`입니다. 다른 버전은 동작할 수 있지만 이 문서에서 확인했다고 보장하지 않습니다.
 
-## 설치
+## 다운로드와 설치
 
-### 1. 로컬 마켓플레이스 등록
+공식 다운로드 위치는 [SoDam_O-Brain-Codex GitHub 저장소](https://github.com/sodam-ai/SoDam_O-Brain-Codex)입니다. 프로그램은 내 컴퓨터에서 실행되고 기억도 로컬에 저장되지만, 설치 파일은 GitHub에서 받습니다. Codex 포팅 파일이 반영된 브랜치나 릴리스를 사용하세요.
 
-PowerShell에서 포팅 폴더로 이동합니다.
+| 원하는 방법 | 선택 기준 |
+|---|---|
+| GitHub 원격 Marketplace | 가장 짧은 명령으로 설치하고 싶을 때 |
+| Git clone | 업데이트와 소스 확인을 쉽게 하고 싶을 때 |
+| Download ZIP | Git 명령을 사용하기 어려울 때 |
+| 독립 웹 앱 | Codex 플러그인 없이 대시보드와 로컬 DB만 시험할 때 |
+
+GitHub 페이지에서 먼저 현재 브랜치 또는 릴리스에 `.agents/plugins/marketplace.json`과 `plugins/o-brain/`이 있는지 확인하세요. 이 두 항목이 보이지 않으면 Codex 포팅판이 아직 그 브랜치에 배포되지 않은 상태입니다.
+
+### GitHub 원격 Marketplace로 바로 설치
+
+Git clone이나 ZIP 다운로드 없이 설치하는 방식입니다. Codex 포팅 파일이 GitHub 저장소에 반영된 뒤 사용할 수 있습니다.
+
+~~~powershell
+codex plugin marketplace add sodam-ai/SoDam_O-Brain-Codex
+codex plugin add o-brain@o-brain-codex
+~~~
+
+전체 HTTPS Git URL도 지원합니다.
+
+~~~powershell
+codex plugin marketplace add https://github.com/sodam-ai/SoDam_O-Brain-Codex.git
+codex plugin add o-brain@o-brain-codex
+~~~
+
+저장소에 Codex 포팅 파일이 아직 반영되지 않은 브랜치는 이 설치 명령과 호환되지 않습니다.
+
+### Git clone 후 설치
+
+~~~powershell
+git clone https://github.com/sodam-ai/SoDam_O-Brain-Codex.git
+cd "SoDam_O-Brain-Codex"
+codex plugin marketplace add .
+codex plugin add o-brain@o-brain-codex
+~~~
+
+### ZIP 다운로드 후 설치
+
+1. 확정된 GitHub 저장소에서 Code > Download ZIP을 누릅니다.
+2. ZIP 압축을 풀고 그 폴더를 파일 탐색기에서 엽니다.
+3. 파일 탐색기 주소 표시줄에 powershell을 입력하고 Enter를 누릅니다.
+4. 아래 명령을 실행합니다.
+
+~~~powershell
+codex plugin marketplace add .
+codex plugin add o-brain@o-brain-codex
+~~~
+
+### 내려받은 폴더에서 Marketplace 설치
+
+Git clone 또는 ZIP으로 받은 SoDam_O-Brain-Codex 폴더 안에서 PowerShell을 열고 실행합니다.
 
 ```powershell
-cd "D:\AI_Dev_Work\2026y\26y_09m_16d_SoDam_O-Brain-Codex"
 codex plugin marketplace add .
 ```
 
-### 2. 플러그인 설치
+### 플러그인 설치 및 확인
 
 ```powershell
 codex plugin add o-brain@o-brain-codex
@@ -77,7 +155,7 @@ codex plugin add o-brain@o-brain-codex
 codex plugin list | Select-String "o-brain"
 ```
 
-### 3. 의존성 준비
+### 최초 의존성 준비
 
 Codex를 새 작업으로 열고 다음처럼 요청합니다.
 
@@ -96,12 +174,22 @@ node scripts/o-brain-cli.mjs selftest
 
 ### 업데이트
 
-로컬 폴더를 수정한 뒤 플러그인 캐시를 갱신합니다.
+먼저 `$o-brain-backup`으로 백업합니다.
 
-```powershell
+GitHub 원격 Marketplace로 설치했다면 다음 순서로 갱신합니다.
+
+~~~powershell
+codex plugin marketplace upgrade o-brain-codex
 codex plugin remove o-brain@o-brain-codex
 codex plugin add o-brain@o-brain-codex
-```
+~~~
+
+Git clone, ZIP 또는 로컬 폴더 방식이면 소스 폴더를 먼저 새 버전으로 바꾼 뒤 다음 명령으로 플러그인 캐시를 갱신합니다.
+
+~~~powershell
+codex plugin remove o-brain@o-brain-codex
+codex plugin add o-brain@o-brain-codex
+~~~
 
 다시 `$o-brain-setup`을 실행합니다. 개인 기억 DB는 플러그인 캐시 밖에 있어 일반적인 재설치로 삭제되지 않습니다.
 
@@ -114,7 +202,7 @@ codex plugin marketplace remove o-brain-codex
 
 이 명령은 플러그인을 제거하지만 개인 DB는 자동 삭제하지 않습니다. 데이터를 삭제하려면 먼저 백업한 뒤 `%LOCALAPPDATA%\SoDamAI\O-Brain` 폴더를 사용자가 직접 확인하고 삭제해야 합니다.
 
-## 빠른 시작
+## 빠른 시작과 실행
 
 1. 설치 후 Codex를 새 작업으로 엽니다.
 2. `$o-brain-setup`을 한 번 실행합니다.
@@ -132,6 +220,13 @@ npm start
 ```
 
 브라우저에서 `http://127.0.0.1:7740/`을 엽니다. 직접 `npm start`로 실행하면 데이터 기본 위치는 `app/data/`입니다. Codex 플러그인 실행 경로는 사용자 데이터 폴더를 기본으로 사용합니다.
+
+### 실행과 종료
+
+- `$o-brain-open`은 필요하면 서버를 백그라운드에서 시작하고 브라우저를 엽니다.
+- `npm start` 서버는 실행한 PowerShell에서 `Ctrl+C`로 종료합니다.
+- 백그라운드 서버에는 별도 `stop` 명령이 아직 없습니다. 작업 관리자를 쓰기 전에 저장·백업 완료를 확인하세요.
+- 서버를 종료해도 SQLite 기억은 지워지지 않습니다.
 
 ## 사용 방법
 
@@ -170,6 +265,17 @@ npm start
 - **설정**: 백업, 내보내기, 데이터 위치
 
 서버는 `127.0.0.1`에만 연결됩니다. 같은 PC의 브라우저에서 사용하며 휴대전화나 다른 PC에서 직접 접근하는 기능은 제공하지 않습니다.
+
+<details>
+<summary><strong>대시보드 화면 예시 보기</strong></summary>
+
+![개요 화면](./assets/screenshots/overview.png)
+![기억 목록과 상세 화면](./assets/screenshots/list-detail.png)
+![2D 관계 그래프](./assets/screenshots/graph-2d.png)
+![타임라인](./assets/screenshots/timeline.png)
+![설정과 백업](./assets/screenshots/settings.png)
+
+</details>
 
 ## 명령과 테스트
 
@@ -212,6 +318,11 @@ npm start
 | `plugins/o-brain/scripts/` | 런타임·설정·MCP 실행 도구 | 포함 |
 | `app/src/` | DB·검색·서버·파서·테스트 | 포함 |
 | `app/web/` | 로컬 대시보드 | 포함 |
+| `README.md` / `README.en.md` | 한국어·영어 원본 설명서 | 포함 |
+| `README.html` / `README.en.html` | Markdown과 동일한 HTML 설명서 | 포함 |
+| `LICENSE` / `NOTICE` | 라이선스와 제3자 고지 | 포함 |
+| `LEGAL_GUIDE.md` / `LEGAL_GUIDE.en.md` / `THIRD_PARTY_LICENSES.md` | 법률·상업 이용 가이드와 전체 의존성 목록 | 포함 |
+| `.PRD/` / `docs/` | 설계 기록과 계획 | 포함 |
 | `plugins/o-brain/app/` | 설치용 앱 복사본(개발 데이터 제외) | 포함 |
 | `%LOCALAPPDATA%\SoDamAI\O-Brain\data` | 플러그인 모드 개인 DB·백업·내보내기 | **제외** |
 | `%LOCALAPPDATA%\SoDamAI\O-Brain\.env.local` | 선택 사용자 설정 | **제외** |
@@ -255,22 +366,41 @@ Codex MCP 또는 브라우저
 
 ## 보안과 개인정보
 
+### 데이터 흐름
+
+입력 → 시크릿·형식 검사 → 로컬 SQLite 저장 → 로컬 FTS5·임베딩 검색 → 임시 토큰을 쓰는 같은 PC의 대시보드 순서입니다. O-Brain 전용 외부 서버나 클라우드 DB로 기억을 보내는 코드는 없습니다.
+
+### 적용된 보호
+
 - 서버는 `127.0.0.1`에만 바인딩합니다.
 - API는 서버가 매 실행 시 만든 임시 토큰을 요구하고, 비교에는 `timingSafeEqual`을 사용합니다.
 - 외부 Origin은 거부하고 CSP, frame 차단, MIME sniffing 차단 헤더를 사용합니다.
 - JSON 본문은 64KB, 검색어·저장 내용·페이지 크기에는 상한이 있습니다.
+- 없는 기억 수정은 `404`, 잘못된 입력은 `400`, 인증 실패는 `401`/`403`으로 구분합니다.
+- API 실패는 빈 목록으로 숨기지 않고 오류 상태로 표시합니다.
+- 요청 오류 로그에는 상태와 유형만 남기며 본문·경로·스택은 남기지 않습니다.
 - `sk-...`, 토큰, 비밀번호 등은 추출 전에 `[REDACTED:종류]`로 바꿉니다.
 - 훅 입력 전체를 진단 파일에 저장하지 않습니다.
 - DB·백업·환경 파일·모델 캐시는 Git에 포함하지 않습니다.
 - 큰 대화 로그는 전체가 아니라 끝 20MB만 읽습니다.
-- 삭제·중복 정리 전에는 온라인 백업을 만듭니다.
+- 삭제·중복 정리 전 온라인 백업을 만들며 삭제에는 클릭 가능한 10초 되돌리기가 있습니다.
 
 시크릿 가림은 방어 수단이며 모든 비밀 패턴을 완벽히 보장하지 않습니다. 비밀번호, 고객 개인정보, 비공개 원문을 대화에 입력하지 않는 것이 가장 안전합니다. 개인 DB를 공유하거나 납품할 때는 내용을 직접 검토하세요.
+
+## 백업·내보내기·복구
+
+1. 중요한 변경이나 업데이트 전에 `$o-brain-backup`을 실행합니다.
+2. 대시보드 설정에서 백업 목록과 저장 위치를 확인합니다.
+3. 다른 사람에게 전달할 때는 화면에 보이는 일부 항목과 전체 JSON/Markdown 내보내기를 구분합니다. 전체 내보내기에는 프로젝트 이름이나 로컬 경로가 들어갈 수 있습니다.
+4. 복구가 필요하면 서버와 Codex 작업을 먼저 종료하고 원본 DB와 백업을 모두 복사해 보존합니다.
+5. 현재 버전은 백업 파일을 자동으로 덮어써 복구하는 버튼을 제공하지 않습니다. SQLite 파일을 임의로 교체하지 말고 백업 시각·무결성·대상 경로를 확인한 뒤 전문가 또는 저장소 이슈를 통해 복구하세요.
+
+기본 백업은 최근 7개를 유지합니다. 백업도 개인 대화와 프로젝트 정보를 포함할 수 있으므로 메일·메신저·공개 저장소에 그대로 올리지 마세요.
 
 ## 업데이트 내용
 
 <details>
-<summary><strong>v0.2.0 — Codex 포팅 (2026-09-16)</strong></summary>
+<summary><strong>v0.2.0 — Codex 포팅 및 최종 안정화 (2026-09-16)</strong></summary>
 
 - Codex 표준 `.codex-plugin`, marketplace, Agent Plugins 1.0 manifest 추가
 - Codex `SessionStart`/`SessionEnd` hook과 `${PLUGIN_ROOT}`/Windows 명령 지원
@@ -282,6 +412,8 @@ Codex MCP 또는 브라우저
 - 파서·훅·MCP·HTTP·DB 자동 테스트 추가
 - 로컬 marketplace 설치, 설치 캐시 setup, selftest 실제 검증
 - 설치 패키지를 `plugins/o-brain`으로 분리해 개발 의존성과 로컬 데이터의 캐시 혼입 차단
+- `404` 구분, 안전한 로그, 오류 화면, 클릭 가능한 삭제 되돌리기 보완
+- 전체 테스트, npm 감사, SQLite 무결성, 데스크톱·390px 모바일 흐름 재검증
 
 </details>
 
@@ -307,6 +439,7 @@ Codex MCP 또는 브라우저
 | `ERR_MODULE_NOT_FOUND` | `$o-brain-setup` 또는 `node scripts/o-brain-cli.mjs setup` 실행 |
 | Node 버전 오류 | `node --version`이 26.7.x인지 확인 |
 | `Marketplace not found` | 먼저 `codex plugin marketplace add .`, 다음에 `codex plugin add o-brain@o-brain-codex`를 별도 실행 |
+| 최신 수정이 안 보임 | 플러그인 재설치, 새 작업, 브라우저 `Ctrl+F5` 순서로 확인 |
 | 포트 충돌 | 사용자 설정 `.env.local`에 `OBRAIN_PORT=7741`을 넣고 재시작 |
 | 기억이 0건 | 질문이나 잡담이 아닌 확정 문장을 말한 뒤 작업을 정상 종료하고 `$o-brain-status` 실행 |
 | 자동 저장이 안 됨 | 새 작업에서 플러그인이 활성인지 확인하고 `npm run test:hooks` 실행 |
@@ -315,6 +448,10 @@ Codex MCP 또는 브라우저
 | DB 손상 의심 | 쓰기를 멈추고 `$o-brain-backup` 결과와 `data/backup/`을 보존한 뒤 전문가 확인 |
 
 ## FAQ
+
+**Q. 어디에서 다운로드하나요?**
+
+A. 공식 저장소 [https://github.com/sodam-ai/SoDam_O-Brain-Codex](https://github.com/sodam-ai/SoDam_O-Brain-Codex)에서 Code > Download ZIP을 누르거나 Git clone 명령을 사용합니다.
 
 **Q. 대화가 OpenAI 외의 O-Brain 서버로 전송되나요?**
 
@@ -338,22 +475,20 @@ A. 규칙 기반 추출이므로 누락·오탐 가능성이 있습니다. 대�
 
 ## 라이선스·저작권·상업적 사용
 
-O-Brain 소스는 **Apache License, Version 2.0**으로 배포되며 저작권자는 **Copyright 2026 SoDam AI Studio**입니다. 공식 본문은 [`LICENSE`](./LICENSE), 제3자 고지는 [`NOTICE`](./NOTICE)를 확인하세요.
+O-Brain은 **Apache License, Version 2.0**(SPDX `Apache-2.0`), **Copyright 2026 SoDam AI Studio**로 제공됩니다. 공식 본문은 [`LICENSE`](./LICENSE), 고지는 [`NOTICE`](./NOTICE), 전체 의존성 메타데이터는 [`THIRD_PARTY_LICENSES.md`](./THIRD_PARTY_LICENSES.md), 쉬운 배포 안내는 [`LEGAL_GUIDE.md`](./LEGAL_GUIDE.md)를 확인하세요.
 
 | 사용 | 안내 |
 |---|---|
-| 개인·교육·회사 내부 사용 | Apache-2.0 조건에 따라 가능 |
-| 수정·복제·포크 | 가능. 라이선스·저작권 고지를 유지하고 수정 사실을 표시해야 함 |
-| 재배포·판매·서비스·고객 납품 | 가능할 수 있음. LICENSE/NOTICE 제공, 변경 고지, 제3자 권리 확인 필요 |
-| 상표·로고 | Apache-2.0이 SoDam AI Studio, O-Brain, OpenAI, Codex 상표 사용권을 주는 것은 아님 |
-| 보증·책임 | 소프트웨어는 현 상태로 제공되며 공식 라이선스의 보증 부인·책임 제한 적용 |
+| 개인·교육·회사 내부 | Apache-2.0 조건에 따라 가능 |
+| 수정·복제·포크 | 가능. 고지를 유지하고 변경 사실 표시 |
+| 소스 재배포·판매·서비스 운영 | 가능. LICENSE·NOTICE·제3자 고지와 외부 서비스 약관 준수 |
+| 회사·고객사 납품 | 조건부 가능. 실제 납품 파일·계약은 법무/전문가 검토 필요 |
+| 바이너리·`node_modules` 포함 배포 | sharp/libvips LGPL 의무에 대해 법무/전문가 검토 필요 |
 
-추가 확인 사항:
+하면 안 되는 일:
 
-- npm 의존성과 임베딩 모델에는 Apache-2.0, MIT, BSD, ISC, 이중 라이선스가 적용됩니다. `sharp` 플랫폼 바이너리의 패키지 메타데이터에는 LGPL-3.0-or-later 구성요소도 표시되므로, 바이너리를 재배포·납품할 때는 정확한 대상 파일의 고지와 LGPL 의무를 별도로 검토해야 합니다. 버전과 고지는 `package-lock.json`과 `NOTICE`를 기준으로 확인하세요.
-- 화면 캡처는 이 프로젝트의 로컬 대시보드에서 제작한 자료입니다. 다른 브랜드 로고·고객 자료를 새로 넣으면 해당 권리를 별도로 확인해야 합니다.
-- 사용자가 입력하거나 생성한 코드·문서·프롬프트·AI 결과물의 저작권, 개인정보, 영업비밀, 상업 이용 가능성은 배포 전에 직접 확인해야 합니다.
-- OpenAI/Codex 사용, 요금, 결과물, 데이터 처리는 O-Brain 라이선스와 별개로 해당 서비스의 최신 약관이 적용됩니다.
-- 고객 납품, 규제 산업, 개인정보 처리, 대규모 상업 배포는 **법무/전문가 검토 필요**입니다.
+- 라이선스·저작권·제3자 고지를 제거하거나 상표권·제휴·보증을 주장하지 마세요.
+- 개인 DB, 환경 파일, 고객 정보, 비밀키, 권리 미확인 외부 자료·AI 생성물을 배포하지 마세요.
+- 로컬 서버를 인증·TLS 없이 인터넷에 공개하지 마세요.
 
-이 문서는 일반적인 프로젝트 사용 안내이며 법률 자문이 아닙니다.
+소프트웨어는 `LICENSE`에 따라 **현 상태(AS IS)**로 제공되며 보증이 없고 책임이 제한됩니다. OpenAI/Codex 요금·서비스·데이터·사용 정책, 모델 정책, 외부 자료 권리는 별도입니다. AI 생성·보조 콘텐츠는 최종 사용 전 사람이 출처, 유사성, 저작권, 개인정보, 상업 이용 가능성을 검토해야 합니다. 이 안내는 법률 자문이 아닙니다.

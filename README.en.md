@@ -1,26 +1,30 @@
-[한국어](./README.md) · [HTML](./README.en.html) · [Original project](https://github.com/sodam-ai/SoDam_O-Brain)
+[한국어](./README.md) · [HTML](./README.en.html) · [Codex repository](https://github.com/sodam-ai/SoDam_O-Brain-Codex) · [Pre-port original](https://github.com/sodam-ai/SoDam_O-Brain)
 
 # SoDam O-Brain for Codex
 
 O-Brain is a personal, local memory plugin that stores user-confirmed decisions, constraints, preferences, and knowledge from Codex conversations in a **SQLite database on your computer**. It recalls related memories in later tasks and includes 2D/3D graph, list, timeline, search, and backup views.
 
-> This document describes the local port at `D:\AI_Dev_Work\2026y\26y_09m_16d_SoDam_O-Brain-Codex`. No public GitHub URL has been provided for this Codex port, so this guide does not invent a download URL.
+> Official source repository: [github.com/sodam-ai/SoDam_O-Brain-Codex](https://github.com/sodam-ai/SoDam_O-Brain-Codex). This guide covers installation and use of the Codex port.
+
+> **“Runs locally” does not mean that installation files must come from a private local folder.** Anyone can download the project from the official GitHub repository above. Execution and memory storage then stay on the user's computer. None of the commands below contains the maintainer's personal work path.
 
 ## Table of Contents
 
 1. [What It Does](#what-it-does)
-2. [Prerequisites](#prerequisites)
-3. [Installation](#installation)
-4. [Quick Start](#quick-start)
-5. [How to Use](#how-to-use)
-6. [Commands and Tests](#commands-and-tests)
-7. [Files and Data Locations](#files-and-data-locations)
-8. [Workflow and Architecture](#workflow-and-architecture)
-9. [Security and Privacy](#security-and-privacy)
-10. [Updates](#updates)
-11. [Troubleshooting](#troubleshooting)
-12. [FAQ](#faq)
-13. [License, Copyright, and Commercial Use](#license-copyright-and-commercial-use)
+2. [Verified Scope and Support Status](#verified-scope-and-support-status)
+3. [Prerequisites and Required Software](#prerequisites-and-required-software)
+4. [Download and Installation](#download-and-installation)
+5. [Quick Start and Running](#quick-start-and-running)
+6. [How to Use](#how-to-use)
+7. [Commands and Tests](#commands-and-tests)
+8. [Files and Data Locations](#files-and-data-locations)
+9. [Workflow and Architecture](#workflow-and-architecture)
+10. [Security and Privacy](#security-and-privacy)
+11. [Backup, Export, and Recovery](#backup-export-and-recovery)
+12. [Updates](#updates)
+13. [Troubleshooting](#troubleshooting)
+14. [FAQ](#faq)
+15. [License, Copyright, and Commercial Use](#license-copyright-and-commercial-use)
 
 ## What It Does
 
@@ -36,7 +40,21 @@ O-Brain is a personal, local memory plugin that stores user-confirmed decisions,
 
 O-Brain does not store everything you say. Rule-based extraction selects user statements with clear confirmation signals such as “we decided,” “must,” or “I prefer.” Use `$o-brain-remember` when a critical item should be saved explicitly.
 
-## Prerequisites
+## Verified Scope and Support Status
+
+| Item | Current status |
+|---|---|
+| Primary environment | Windows 10/11 with the Codex app or CLI |
+| Actually verified versions | Node.js `v26.7.0`, npm `11.6.2`, Codex CLI `0.154.0` |
+| Network | Required for installation, dependencies, and first model download. Memory storage and search are local |
+| Mobile | The 390px-wide layout was checked, but phone access is unsupported because the server is limited to the same PC |
+| Login/account | O-Brain has no account or login system. Codex access belongs to the OpenAI account layer |
+| External DB/payment | O-Brain has no dedicated external database or payment feature |
+| macOS/Linux | User-directory defaults exist in code, but installation and UI flows were not live-verified for this release |
+
+Verified behavior is separated from unverified scope. “Supported” here means checked in the current code and tests; it is not a warranty for every computer configuration.
+
+## Prerequisites and Required Software
 
 - Windows 10/11, or a computer that can run Node.js 26.7.x
 - **Node.js 26.7.x** and npm 11.x
@@ -44,7 +62,18 @@ O-Brain does not store everything you say. Rule-based extraction selects user st
 - Internet access for the first `npm ci` and embedding model download
 - At least 1 GB of free space recommended for Node dependencies and the local model cache
 
-Check versions:
+Beginner terms:
+
+| Term | Plain meaning |
+|---|---|
+| Folder path | A file address, such as `C:\Tools\SoDam_O-Brain-Codex`. |
+| Command | A line entered in PowerShell and run with Enter. |
+| Plugin | An installable bundle that adds features to Codex. |
+| Local | Processing happens on this computer. |
+| DB (SQLite) | A database that organizes memories in one file. |
+| Port | A number used to find the local server. Default: `7740`. |
+
+Run these checks one line at a time:
 
 ```powershell
 node --version
@@ -54,18 +83,67 @@ codex --version
 
 This port was verified with Node.js `v26.7.0`, npm `11.6.2`, and Codex CLI `0.154.0`. Other versions may work, but they are not claimed as verified here.
 
-## Installation
+## Download and Installation
 
-### 1. Add the local marketplace
+Download the project from the official [SoDam_O-Brain-Codex GitHub repository](https://github.com/sodam-ai/SoDam_O-Brain-Codex). The program and its memory data remain local even though installation files come from GitHub. Use a branch or release that contains the Codex port.
 
-Open PowerShell and move to the port directory.
+| Method | Choose it when |
+|---|---|
+| GitHub remote Marketplace | You want the shortest installation commands |
+| Git clone | You want easier updates and source inspection |
+| Download ZIP | You are not comfortable with Git commands |
+| Standalone web app | You want to try the dashboard and local DB without the Codex plugin |
+
+On GitHub, first confirm that the selected branch or release contains `.agents/plugins/marketplace.json` and `plugins/o-brain/`. If either is missing, that branch does not yet contain the Codex port.
+
+### Install directly from the GitHub remote marketplace
+
+This method needs no manual Git clone or ZIP download. Use it after the Codex-port files are published in the GitHub repository.
+
+~~~powershell
+codex plugin marketplace add sodam-ai/SoDam_O-Brain-Codex
+codex plugin add o-brain@o-brain-codex
+~~~
+
+A full HTTPS Git URL is also supported.
+
+~~~powershell
+codex plugin marketplace add https://github.com/sodam-ai/SoDam_O-Brain-Codex.git
+codex plugin add o-brain@o-brain-codex
+~~~
+
+A branch that does not yet contain the Codex-port files is not compatible with this installation command.
+
+### Install after Git clone
+
+~~~powershell
+git clone https://github.com/sodam-ai/SoDam_O-Brain-Codex.git
+cd "SoDam_O-Brain-Codex"
+codex plugin marketplace add .
+codex plugin add o-brain@o-brain-codex
+~~~
+
+### Install from a downloaded ZIP
+
+1. In the confirmed GitHub repository, select Code > Download ZIP.
+2. Extract the ZIP and open that folder in File Explorer.
+3. Enter powershell in File Explorer's address bar and press Enter.
+4. Run:
+
+~~~powershell
+codex plugin marketplace add .
+codex plugin add o-brain@o-brain-codex
+~~~
+
+### Install the marketplace from the downloaded folder
+
+Open PowerShell inside the SoDam_O-Brain-Codex folder obtained by Git clone or ZIP, then run:
 
 ```powershell
-cd "D:\AI_Dev_Work\2026y\26y_09m_16d_SoDam_O-Brain-Codex"
 codex plugin marketplace add .
 ```
 
-### 2. Install the plugin
+### Install and verify the plugin
 
 ```powershell
 codex plugin add o-brain@o-brain-codex
@@ -77,7 +155,7 @@ Verify installation:
 codex plugin list | Select-String "o-brain"
 ```
 
-### 3. Prepare dependencies
+### Prepare dependencies for the first run
 
 Open a new Codex task and ask:
 
@@ -96,12 +174,22 @@ Setup runs `npm ci` with the locked dependencies. The first search or test may d
 
 ### Updating
 
-After changing the local source, refresh the plugin cache:
+Create a backup with `$o-brain-backup` first.
 
-```powershell
+For a GitHub remote marketplace, refresh and reinstall in this order:
+
+~~~powershell
+codex plugin marketplace upgrade o-brain-codex
 codex plugin remove o-brain@o-brain-codex
 codex plugin add o-brain@o-brain-codex
-```
+~~~
+
+For Git clone, ZIP, or local-folder installation, update the source folder first and then refresh the plugin cache:
+
+~~~powershell
+codex plugin remove o-brain@o-brain-codex
+codex plugin add o-brain@o-brain-codex
+~~~
 
 Run `$o-brain-setup` again. The personal database is outside the plugin cache and is not removed by a normal reinstall.
 
@@ -114,7 +202,7 @@ codex plugin marketplace remove o-brain-codex
 
 These commands remove the plugin but do not automatically delete personal data. To erase it, create a backup first, inspect `%LOCALAPPDATA%\SoDamAI\O-Brain`, and delete that folder yourself.
 
-## Quick Start
+## Quick Start and Running
 
 1. Open a new Codex task after installation.
 2. Run `$o-brain-setup` once.
@@ -132,6 +220,13 @@ npm start
 ```
 
 Open `http://127.0.0.1:7740/`. Direct `npm start` uses `app/data/` by default. Codex plugin entry points use the external user data directory by default.
+
+### Start and stop
+
+- `$o-brain-open` starts a background server when needed and opens the browser.
+- Stop an `npm start` server with `Ctrl+C` in its PowerShell window.
+- The background server has no `stop` command yet. Confirm saves and backups before Task Manager.
+- Stopping the server does not delete SQLite memories.
 
 ## How to Use
 
@@ -170,6 +265,17 @@ O-Brain does not automatically decide relation types. Only user-confirmed relati
 - **Settings**: backup, export, and data location
 
 The server binds only to `127.0.0.1`. It is intended for a browser on the same computer and does not provide direct phone or remote-PC access.
+
+<details>
+<summary><strong>View dashboard examples</strong></summary>
+
+![Overview](./assets/screenshots/overview.png)
+![Memory list and detail](./assets/screenshots/list-detail.png)
+![2D relationship graph](./assets/screenshots/graph-2d.png)
+![Timeline](./assets/screenshots/timeline.png)
+![Settings and backup](./assets/screenshots/settings.png)
+
+</details>
 
 ## Commands and Tests
 
@@ -212,6 +318,11 @@ No separate lint or TypeScript type-check configuration exists. This is a pure J
 | `plugins/o-brain/scripts/` | Runtime, setup, and MCP launchers | Yes |
 | `app/src/` | DB, search, server, parser, and tests | Yes |
 | `app/web/` | Local dashboard | Yes |
+| `README.md` / `README.en.md` | Korean/English source guides | Yes |
+| `README.html` / `README.en.html` | Matching generated HTML guides | Yes |
+| `LICENSE` / `NOTICE` | License and third-party notices | Yes |
+| `LEGAL_GUIDE.md` / `LEGAL_GUIDE.en.md` / `THIRD_PARTY_LICENSES.md` | Legal/commercial guide and full dependency inventory | Yes |
+| `.PRD/` / `docs/` | Design records and plans | Yes |
 | `plugins/o-brain/app/` | Installable app copy without development data | Yes |
 | `%LOCALAPPDATA%\SoDamAI\O-Brain\data` | Plugin-mode personal DB, backups, exports | **No** |
 | `%LOCALAPPDATA%\SoDamAI\O-Brain\.env.local` | Optional user configuration | **No** |
@@ -255,22 +366,41 @@ The core stack is Node.js ESM, Express 5, better-sqlite3, sqlite-vec, FTS5, Tran
 
 ## Security and Privacy
 
+### Data flow
+
+Input → secret/format checks → local SQLite → local FTS5/embedding search → same-PC dashboard with an ephemeral token. The code does not send memories to an O-Brain cloud service or external database.
+
+### Applied protections
+
 - The server binds only to `127.0.0.1`.
 - API requests require an ephemeral token generated on each server start and compared with `timingSafeEqual`.
 - External origins are rejected; CSP, frame blocking, and MIME sniffing protection are enabled.
 - JSON bodies are limited to 64 KB, and search text, saved content, and page sizes have bounds.
+- Missing updates return `404`, invalid input `400`, and auth failures `401`/`403`.
+- API failures appear as error states instead of empty lists.
+- Request-error logs keep status/type only, without bodies, paths, or stacks.
 - Patterns such as `sk-...`, tokens, and passwords are replaced with `[REDACTED:type]` before extraction.
 - Hook payloads are not dumped to diagnostic files.
 - Databases, backups, env files, and model caches are excluded from Git.
 - Very large transcripts read only the final 20 MB.
-- Deletion and duplicate cleanup create an online backup first.
+- Deletion and duplicate cleanup create an online backup first; deletion has a clickable 10-second undo.
 
 Redaction is a defense layer and cannot guarantee detection of every secret format. The safest practice is to avoid entering passwords, customer personal data, or private source material into conversations. Review a personal database before sharing or delivering it.
+
+## Backup, Export, and Recovery
+
+1. Run `$o-brain-backup` before important changes or updates.
+2. Use Dashboard Settings to confirm the backup list and storage location.
+3. Before sharing, distinguish the visible-screen selection from full JSON/Markdown export. A full export may include project names or local paths.
+4. For recovery, stop the server and Codex tasks first, then preserve copies of both the current database and the backup.
+5. The current version does not provide a button that automatically overwrites the database from a backup. Do not replace SQLite files blindly. Confirm timestamps, integrity, and the target path, then seek expert help or open a repository issue.
+
+The default policy keeps the latest seven backups. Backups may contain private conversations and project information, so do not post them directly to email, messengers, or public repositories.
 
 ## Updates
 
 <details>
-<summary><strong>v0.2.0 — Codex port (2026-09-16)</strong></summary>
+<summary><strong>v0.2.0 — Codex port and final hardening (2026-09-16)</strong></summary>
 
 - Added Codex-standard `.codex-plugin`, marketplace, and Agent Plugins 1.0 manifests
 - Added Codex `SessionStart`/`SessionEnd` hooks with `${PLUGIN_ROOT}` and Windows commands
@@ -282,6 +412,8 @@ Redaction is a defense layer and cannot guarantee detection of every secret form
 - Added parser, hook, MCP, HTTP, and DB automated tests
 - Live-verified local marketplace installation, cached-plugin setup, and self-test
 - Isolated `plugins/o-brain` as the install package so development dependencies and local data cannot enter the plugin cache
+- Added `404` distinction, safer logs, error states, and clickable delete undo
+- Reverified all tests, npm audit, SQLite integrity, and desktop/390px mobile flows
 
 </details>
 
@@ -307,6 +439,7 @@ Full design history is in [`.PRD/`](./.PRD/), and the Codex port decision is in 
 | `ERR_MODULE_NOT_FOUND` | Run `$o-brain-setup` or `node scripts/o-brain-cli.mjs setup`. |
 | Node version error | Confirm `node --version` is 26.7.x. |
 | `Marketplace not found` | Run `codex plugin marketplace add .` first, then `codex plugin add o-brain@o-brain-codex`. |
+| Latest changes are missing | Reinstall plugin, open a new task, then press `Ctrl+F5`. |
 | Port conflict | Put `OBRAIN_PORT=7741` in the user `.env.local` and restart. |
 | Zero memories | State a confirmed decision, end the task normally, then run `$o-brain-status`. |
 | Automatic capture fails | Confirm the plugin is active in a new task and run `npm run test:hooks`. |
@@ -315,6 +448,10 @@ Full design history is in [`.PRD/`](./.PRD/), and the Codex port decision is in 
 | Suspected DB damage | Stop writes, preserve `$o-brain-backup` output and `data/backup/`, then seek expert review. |
 
 ## FAQ
+
+**Q. Where do I download it?**
+
+A. Use Code > Download ZIP at [https://github.com/sodam-ai/SoDam_O-Brain-Codex](https://github.com/sodam-ai/SoDam_O-Brain-Codex), or use the Git clone command above.
 
 **Q. Does O-Brain send conversations to an O-Brain server?**
 
@@ -338,22 +475,20 @@ A. Rule-based extraction can miss or misclassify statements. Review the dashboar
 
 ## License, Copyright, and Commercial Use
 
-O-Brain source is licensed under the **Apache License, Version 2.0**, with **Copyright 2026 SoDam AI Studio**. See [`LICENSE`](./LICENSE) for the official text and [`NOTICE`](./NOTICE) for third-party notices.
+O-Brain is provided under the **Apache License, Version 2.0** (SPDX `Apache-2.0`), **Copyright 2026 SoDam AI Studio**. See [`LICENSE`](./LICENSE), [`NOTICE`](./NOTICE), [`THIRD_PARTY_LICENSES.md`](./THIRD_PARTY_LICENSES.md), and the plain-language [`LEGAL_GUIDE.en.md`](./LEGAL_GUIDE.en.md).
 
 | Use | Guidance |
 |---|---|
 | Personal, educational, internal company use | Allowed under Apache-2.0 conditions |
-| Modification, copying, and forks | Allowed; retain license/copyright notices and mark changes |
-| Redistribution, sale, service operation, client delivery | May be allowed; provide LICENSE/NOTICE, disclose changes, and verify third-party rights |
-| Trademarks and logos | Apache-2.0 does not grant rights to SoDam AI Studio, O-Brain, OpenAI, or Codex marks |
-| Warranty and liability | Provided as-is under the official license disclaimer and limitation of liability |
+| Modification, copying, forks | Allowed; preserve notices and mark changes |
+| Source redistribution, sale, service operation | Allowed; provide LICENSE/NOTICE/third-party notices and follow service terms |
+| Company or client delivery | Conditional; legal/professional review of actual files and contracts required |
+| Distribution with binaries or `node_modules` | Legal/professional review of sharp/libvips LGPL duties required |
 
-Additional checks:
+Do not:
 
-- npm dependencies and the embedding model use Apache-2.0, MIT, BSD, ISC, or dual licensing. Package metadata for `sharp` platform binaries also identifies LGPL-3.0-or-later components, so redistribution or client delivery of binaries requires a separate review of the exact artifacts, notices, and LGPL obligations. Use `package-lock.json` and `NOTICE` to verify versions and notices.
-- Screenshots were produced from this project's local dashboard. Any new brand logos or customer content require separate rights review.
-- Before distribution, users must verify copyright, privacy, trade-secret, and commercial-use rights for their code, documents, prompts, and AI-generated output.
-- OpenAI/Codex use, fees, output, and data processing are governed by the service's current terms, separate from O-Brain's license.
-- Client delivery, regulated industries, personal-data processing, and large commercial distribution **require legal/professional review**.
+- Remove license, copyright, or third-party notices, or claim trademark rights, affiliation, or endorsement.
+- Ship personal DBs, env files, customer data, secrets, or unverified third-party/AI material.
+- Expose the local server without authentication and TLS.
 
-This document provides general project information and is not legal advice.
+The software is provided **AS IS**, without warranties and with liability limits under `LICENSE`. OpenAI/Codex pricing, service, data, usage policies, model policies, and external-content rights remain separate. Human review of source, similarity, copyright, privacy, and commercial rights is required for AI-generated or AI-assisted material before final use. This information is not legal advice.
