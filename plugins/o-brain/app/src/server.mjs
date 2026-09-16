@@ -252,7 +252,9 @@ app.patch('/api/memory/:id', async (req, res) => {
   if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: '잘못된 id' });
   const { content, type, importance } = req.body || {};
   try { res.json(await updateMemory(db, id, { content, type, importance })); }
-  catch (e) { console.error('[memory:update]', e); res.status(400).json({ error: e.message || '수정 실패' }); }
+  catch (e) {
+    res.status(e.message === '없는 기억' ? 404 : 400).json({ error: e.message || '수정 실패' });
+  }
 });
 
 // 조회 기록(자주 본 기억 글로우) — 상세 열람 시 1회 증가.
@@ -295,8 +297,11 @@ app.use(express.static(join(HERE, '..', 'web')));
 // 여기로 떨어짐 — 지금까지는 Express 기본 핸들러가 스택트레이스·서버 내부 경로를 그대로 응답에 노출했음
 // (2026-07-27 검증 중 발견: 깨진 JSON 전송 시 D:\...\node_modules 경로까지 그대로 노출 확인).
 app.use((err, req, res, next) => {
-  console.error('[unhandled]', err);
-  const status = (err && (err.status || err.statusCode)) || 500;
+  const rawStatus = Number(err && (err.status || err.statusCode));
+  const status = Number.isInteger(rawStatus) && rawStatus >= 400 && rawStatus <= 599 ? rawStatus : 500;
+  const type = String(err?.type || err?.name || 'Error').replace(/[^A-Za-z0-9._-]/g, '').slice(0, 80) || 'Error';
+  // 요청 본문·스택·절대경로는 기록하지 않음. 깨진 JSON 안에 비밀정보가 있을 수 있음.
+  console.warn(`[request:error] status=${status} type=${type}`);
   res.status(status).json({ error: '요청을 처리하지 못했어요' });
 });
 

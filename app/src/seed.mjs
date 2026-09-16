@@ -7,7 +7,7 @@ const DEMO = [
   { content: '이 프로젝트 테스트 포트는 1601 사용', type: '결정', importance: 4 },
   { content: '8809 포트는 충돌나서 금지', type: '제약', importance: 3 },
   { content: 'API 키는 .env.local 에만 저장하고 절대 커밋 금지', type: '제약', importance: 5 },
-  { content: '실수로 키 노출 예: sk-ABCD1234EFGH5678IJKLmnop 는 저장되면 안 됨', type: '제약', importance: 5 },
+  { content: '실수로 키 노출 예: sk-EXAMPLE_NOT_A_REAL_KEY_000000 는 저장되면 안 됨', type: '제약', importance: 5 },
   { content: 'UI는 shadcn/ui 컴포넌트를 우선 재사용한다', type: '선호', importance: 3 },
 ];
 

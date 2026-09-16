@@ -251,7 +251,7 @@
   #toast { position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px); z-index:60;
     background:var(--surface); border:1px solid var(--border2); color:var(--text); padding:11px 18px; border-radius:var(--r);
     box-shadow:var(--shadow); font-size:13px; opacity:0; pointer-events:none; transition:all var(--ease); }
-  #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  #toast.show { opacity:1; transform:translateX(-50%) translateY(0); pointer-events:auto; }
   #toast.ok { border-color:rgba(45,190,158,.6); } #toast.err { border-color:rgba(242,85,90,.6); }
   #toast .undo { margin-left:10px; background:var(--accent-weak); border:1px solid var(--accent); color:var(--accent); border-radius:7px; padding:3px 10px; font-size:12px; font-weight:600; cursor:pointer; }
 
@@ -574,7 +574,12 @@
         return _f0(url, opts);
       };
     }
-    const get = u => fetch(u).then(r => r.json());
+    const get = async u => {
+      const r = await fetch(u);
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
+      return data;
+    };
     const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
     function hexA(hex, a){ const h=hex.replace('#',''); const n=parseInt(h.length===3?h.replace(/(.)/g,'$1$1'):h,16);
       return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`; }

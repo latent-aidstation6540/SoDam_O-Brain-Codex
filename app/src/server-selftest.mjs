@@ -43,7 +43,7 @@ try {
   assert.equal((await health.json()).ok, true);
   assert.equal((await fetch(`${base}/api/memory/not-a-number`, { headers })).status, 400);
   assert.equal((await fetch(`${base}/api/memory`, { method: 'POST', headers: { ...headers, 'content-type': 'application/json' }, body: '{}' })).status, 400);
-  const malformed = await fetch(`${base}/api/memory`, { method: 'POST', headers: { ...headers, 'content-type': 'application/json' }, body: '{bad' });
+  const malformed = await fetch(`${base}/api/memory`, { method: 'POST', headers: { ...headers, 'content-type': 'application/json' }, body: '{"secret":"OBRAIN_LOG_LEAK_SENTINEL"' });
   assert.equal(malformed.status, 400);
   const malformedBody = await malformed.text();
   assert.doesNotMatch(malformedBody, /node_modules|[A-Za-z]:\\/);
@@ -55,12 +55,16 @@ try {
   assert.equal((await fetch(`${base}/api/memory/${created.id}`, { headers })).status, 200);
   const patched = await fetch(`${base}/api/memory/${created.id}`, { method: 'PATCH', headers: { ...headers, 'content-type': 'application/json' }, body: JSON.stringify({ importance: 5 }) });
   assert.equal(patched.status, 200);
+  const missingPatch = await fetch(`${base}/api/memory/999999999`, { method: 'PATCH', headers: { ...headers, 'content-type': 'application/json' }, body: JSON.stringify({ importance: 5 }) });
+  assert.equal(missingPatch.status, 404);
   const listing = await fetch(`${base}/api/memories?limit=9999&offset=-10`, { headers });
   assert.equal(listing.status, 200);
   assert.ok(Array.isArray(await listing.json()));
   assert.equal((await fetch(`${base}/api/memory/${created.id}`, { method: 'DELETE', headers })).status, 200);
   assert.equal((await fetch(`${base}/api/memory/${created.id}`, { headers })).status, 404);
-  console.log('✅ HTTP auth/CORS, invalid input, malformed JSON, memory CRUD, boundary pagination');
+  await new Promise(resolve => setTimeout(resolve, 50));
+  assert.doesNotMatch(logs, /OBRAIN_LOG_LEAK_SENTINEL|node_modules|server\.mjs:\d+/);
+  console.log('✅ HTTP auth/CORS, invalid input, malformed JSON, safe logs, memory CRUD, boundary pagination');
 } finally {
   child.kill();
   await new Promise(resolve => child.once('close', resolve)).catch(() => {});

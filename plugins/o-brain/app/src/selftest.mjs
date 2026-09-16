@@ -24,7 +24,7 @@ let pass = true;
 const check = (name, ok) => { console.log(`${ok ? '✅' : '❌'} ${name}`); if (!ok) pass = false; };
 
 const db = openDb();
-const secret = 'sk-SELFTEST1234567890ABCD';
+const secret = ['sk', 'EXAMPLE_NOT_A_REAL_KEY_SELFTEST_0000'].join('-');
 const r = await addMemory(db, { content: `셀프테스트: 이 프로젝트 포트는 7740으로 정하자 (비밀 ${secret})`, type: '결정', importance: 4 });
 check('1. 기억이 저장됨', !!r.id);
 
