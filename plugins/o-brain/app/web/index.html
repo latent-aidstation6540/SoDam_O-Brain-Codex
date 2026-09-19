@@ -672,7 +672,7 @@
     }
     function emptyState(){
       if(searchResults !== null || activeType) return `<div class="empty"><div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></div><h4>결과가 없어요</h4><p>다른 검색어나 필터를 시도해 보세요.</p></div>`;
-      return `<div class="empty"><div class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg></div><h4>아직 기억이 없어요</h4><p>클로드코드에서 대화하고 세션을 끝내면, 결정·약속·금지 같은 내용이 여기에 자동으로 쌓입니다.</p></div>`;
+      return `<div class="empty"><div class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg></div><h4>아직 기억이 없어요</h4><p>Codex에서 대화하고 작업을 마치면, 결정·약속·금지 같은 내용이 여기에 자동으로 쌓입니다.</p></div>`;
     }
     function renderTimeline(mems){
       const sorted=[...mems].sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||''));
@@ -697,7 +697,7 @@
     async function renderOverview(){
       const host=document.getElementById('ov'); if(!host) return;
       let s; try{ s=await get('/api/stats'); }catch{ s=null; }
-      if(!s || !s.total){ host.innerHTML=`<div class="empty"><div class="ico">${svgIco('brain')}</div><h4>아직 보여줄 요약이 없어요</h4><p>클로드코드에서 대화하고 세션을 끝내면, 여기에 한눈에 보는 요약이 쌓입니다.</p></div>`; return; }
+      if(!s || !s.total){ host.innerHTML=`<div class="empty"><div class="ico">${svgIco('brain')}</div><h4>아직 보여줄 요약이 없어요</h4><p>Codex에서 대화하고 작업을 마치면, 여기에 한눈에 보는 요약이 쌓입니다.</p></div>`; return; }
       if(s.total) statTotal=s.total; // 목록 더보기 기준 갱신
       const typeMax=Math.max(1,...TYPES.map(t=>s.byType[t]||0));
       const typeBars=TYPES.filter(t=>s.byType[t]).map(t=>ovBar(color(t), t, s.byType[t]||0, typeMax)).join('');

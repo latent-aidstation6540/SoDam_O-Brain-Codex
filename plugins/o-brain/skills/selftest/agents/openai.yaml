@@ -1,0 +1,4 @@
+interface:
+  display_name: "o-brain:selftest"
+  short_description: "O-Brain 저장, 시크릿 가림, 검색, DB 동작을 실제 개인 데이터와 분리된 임시 DB로 검사한다."
+  default_prompt: "Use $o-brain:selftest to run this O-Brain command."

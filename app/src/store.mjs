@@ -236,7 +236,7 @@ export function getStats(db) {
 
 const MEM_TYPES = ['결정', '제약', '선호', '패턴', '지식'];
 // 기억 편집(사용자) — 내용 변경 시 재redact(보안 필수)+재embed+FTS/벡터 동기화. 편집=사람 검증이므로 source=user·confidence=1.0.
-export async function updateMemory(db, id, { content, type, importance } = {}) {
+export async function updateMemory(db, id, /** @type {{ content?: unknown, type?: string, importance?: unknown }} */ { content, type, importance } = {}) {
   const mid = Number(id);
   if (!Number.isInteger(mid) || mid <= 0) throw new Error('잘못된 id');
   if (!db.prepare('SELECT 1 FROM memory WHERE id = ?').get(mid)) throw new Error('없는 기억');

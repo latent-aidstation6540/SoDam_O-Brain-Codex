@@ -1,0 +1,4 @@
+interface:
+  display_name: "o-brain:open"
+  short_description: "O-Brain 로컬 대시보드 서버를 확인하고 필요하면 시작한 뒤 브라우저로 연다."
+  default_prompt: "Use $o-brain:open to run this O-Brain command."

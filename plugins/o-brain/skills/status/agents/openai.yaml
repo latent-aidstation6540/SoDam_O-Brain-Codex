@@ -1,0 +1,4 @@
+interface:
+  display_name: "o-brain:status"
+  short_description: "O-Brain 기억 수, 최근 기억, 데이터 경로와 자동 훅 상태를 확인한다."
+  default_prompt: "Use $o-brain:status to run this O-Brain command."

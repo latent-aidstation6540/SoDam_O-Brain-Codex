@@ -6,7 +6,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { openDb, DATA_DIR } from './db.mjs';
 import { search } from './search.mjs';
-import { addMemory, listMemories, countMemories, getMemory, getSimilar, getStats, deleteMemory, updateMemory, addRelation, listRelations, deleteRelation, touchMemory, listCategories, applyConfidenceDecay, findDuplicateCandidates, findExactDuplicates, findShortestPath } from './store.mjs';
+import { addMemory, listMemories, getMemory, getSimilar, getStats, deleteMemory, updateMemory, addRelation, listRelations, deleteRelation, touchMemory, listCategories, applyConfidenceDecay, findDuplicateCandidates, findExactDuplicates, findShortestPath } from './store.mjs';
 import { initEmbedder, embedMode } from './embed.mjs';
 import { buildGraph } from './graph.mjs';
 import { backupOnce, listBackups } from './backup.mjs';
@@ -33,6 +33,14 @@ function isValidToken(token) {
   return buf.length === API_TOKEN_BUF.length && timingSafeEqual(buf, API_TOKEN_BUF);
 }
 
+function errorCode(error) {
+  return String(error?.code || error?.name || 'Error').replace(/[^A-Za-z0-9._-]/g, '').slice(0, 80) || 'Error';
+}
+
+function logOperationError(operation, error) {
+  const safeOperation = String(operation).replace(/[^A-Za-z0-9._:-]/g, '').slice(0, 80) || 'unknown';
+  console.error(`[operation:error] op=${safeOperation} type=${errorCode(error)}`);
+}
 const app = express();
 app.use((req, res, next) => {
   const origin = req.headers.origin;
@@ -151,13 +159,13 @@ app.post('/api/duplicates/merge', async (req, res) => {
   const keepMem = getMemory(db, keepId), dropMem = getMemory(db, dropId);
   if (!keepMem || !dropMem) return res.status(404).json({ error: '없는 기억' });
   try { await backupOnce({ tag: 'before-merge' }); }
-  catch (e) { console.error('[duplicates/merge]', e); return res.status(500).json({ error: '백업 실패로 정리 중단' }); } // 08 §7: 상세는 로컬 로그만(2026-08-02 정보노출 수정 — clean-exact와 동일 패턴)
+  catch (e) { logOperationError('duplicates.merge', e); return res.status(500).json({ error: '백업 실패로 정리 중단' }); } // 08 §7: 상세는 로컬 로그만(2026-08-02 정보노출 수정 — clean-exact와 동일 패턴)
   try {
     const keepOriginalContent = keepMem.content; // 되돌리기용 원본(합치기 모드일 때만 의미 있음)
     if (mode === 'combine') await updateMemory(db, keepId, { content: keepOriginalContent + '\n\n' + dropMem.content });
     deleteMemory(db, dropId);
     res.json({ ok: true, kept: keepId, dropped: dropId, mode, dropSnapshot: dropMem, keepOriginalContent });
-  } catch (e) { console.error('[duplicates/merge]', e); res.status(500).json({ error: '정리 실패' }); } // 08 §7: 상세 원인은 로컬 로그(console.error)에만, 화면엔 일반 메시지만
+  } catch (e) { logOperationError('duplicates.merge', e); res.status(500).json({ error: '정리 실패' }); } // 08 §7: 상세 원인은 로컬 로그(console.error)에만, 화면엔 일반 메시지만
 });
 // 완전일치 중복 일괄 정리 — "찾기는 항상 자동, 실행은 사람이 확인 버튼 누른 뒤"(PRD 자동삭제 금지 원칙 유지).
 // findDuplicateCandidates가 아니라 findExactDuplicates를 직접 호출 — DB가 줄어 total<=1500이 되어
@@ -171,7 +179,7 @@ app.post('/api/duplicates/clean-exact', async (req, res) => {
   const r = findExactDuplicates(db, 1000, total);
   if (!r.pairs.length) return res.json({ ok: true, deleted: [], failed: [] });
   try { await backupOnce({ tag: 'before-dup-clean' }); }
-  catch (e) { console.error('[duplicates/clean-exact]', e); return res.status(500).json({ error: '백업 실패로 정리 중단' }); } // 08 §7: 상세는 로컬 로그만(2026-08-02 검증 중 발견 — e.message가 서버 절대경로를 응답에 노출하고 있었음)
+  catch (e) { logOperationError('duplicates.clean-exact', e); return res.status(500).json({ error: '백업 실패로 정리 중단' }); } // 08 §7: 상세는 로컬 로그만(2026-08-02 검증 중 발견 — e.message가 서버 절대경로를 응답에 노출하고 있었음)
   const deleted = [], failed = [];
   for (const p of r.pairs) {
     const id = p.b.id;
@@ -189,7 +197,7 @@ app.post('/api/duplicates/clean-exact', async (req, res) => {
 app.post('/api/export', (req, res) => {
   const format = (req.body || {}).format === 'md' ? 'md' : 'json';
   try { res.json({ ok: true, ...exportMemories(db, { format }) }); }
-  catch (e) { console.error('[export]', e); res.status(500).json({ error: '내보내기 실패' }); } // 08 §7: 상세는 로컬 로그만
+  catch (e) { logOperationError('export', e); res.status(500).json({ error: '내보내기 실패' }); } // 08 §7: 상세는 로컬 로그만
 });
 app.get('/api/graph', (req, res) => {
   const limit = Math.min(2000, Math.max(50, Number(req.query.limit) | 0 || 600)); // 노드 상한(대량 프리즈 방지) — 소수 입력 시 정수화(better-sqlite3 LIMIT 바인딩 방어)
@@ -219,7 +227,7 @@ app.post('/api/memory/batch-delete', async (req, res) => {
   const validIds = ids.map(Number).filter(n => Number.isInteger(n) && n > 0);
   if (!validIds.length) return res.status(400).json({ error: '유효한 id가 없어요' });
   try { await backupOnce({ tag: 'before-delete' }); }
-  catch (e) { console.error('[memory:batch-delete]', e); return res.status(500).json({ error: '백업 실패로 삭제 중단' }); } // 08 §7: 상세는 로컬 로그만(2026-08-02 정보노출 수정 — clean-exact와 동일 패턴)
+  catch (e) { logOperationError('memory.batch-delete', e); return res.status(500).json({ error: '백업 실패로 삭제 중단' }); } // 08 §7: 상세는 로컬 로그만(2026-08-02 정보노출 수정 — clean-exact와 동일 패턴)
   const deleted = [], failed = [];
   for (const id of validIds) {
     try { const n = deleteMemory(db, id); if (n) deleted.push(id); else failed.push(id); }
@@ -243,7 +251,7 @@ app.post('/api/memory', async (req, res) => {
       project, scope: resolvedScope,
       category: CATEGORIES.includes(category) ? category : null }); // 미지정/무효값이면 addMemory가 content로 자동분류(store.mjs classify 폴백)
     res.status(result.skipped ? 200 : 201).json({ ok: true, ...result });
-  } catch (e) { console.error('[memory:create]', e); res.status(500).json({ error: '저장 실패' }); } // 08 §7: 동일 원칙
+  } catch (e) { logOperationError('memory.create', e); res.status(500).json({ error: '저장 실패' }); } // 08 §7: 동일 원칙
 });
 
 // 기억 편집(사용자) — 내용/유형/중요도. 내용 변경 시 저장 전 자동 redact + 재임베딩(store.updateMemory).
@@ -272,7 +280,11 @@ app.get('/api/relations', (req, res) => {
 app.post('/api/relation', (req, res) => {
   const { from_id, to_id, type } = req.body || {};
   try { res.json({ ok: true, ...addRelation(db, { from_id, to_id, type }) }); }
-  catch (e) { console.error('[relation:create]', e); res.status(400).json({ error: e.message || '관계 추가 실패' }); }
+  catch (e) {
+    logOperationError('relation.create', e);
+    const message = ['잘못된 대상', '잘못된 관계 유형', '없는 기억'].includes(e?.message) ? e.message : '관계 추가 실패';
+    res.status(400).json({ error: message });
+  }
 });
 app.delete('/api/relation/:id', (req, res) => {
   const id = Number(req.params.id);
@@ -296,7 +308,7 @@ app.use(express.static(join(HERE, '..', 'web')));
 // express.json() 파싱 실패(깨진 JSON)·본문 용량 초과처럼 라우트의 개별 try/catch를 거치지 않는 에러가
 // 여기로 떨어짐 — 지금까지는 Express 기본 핸들러가 스택트레이스·서버 내부 경로를 그대로 응답에 노출했음
 // (2026-07-27 검증 중 발견: 깨진 JSON 전송 시 D:\...\node_modules 경로까지 그대로 노출 확인).
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   const rawStatus = Number(err && (err.status || err.statusCode));
   const status = Number.isInteger(rawStatus) && rawStatus >= 400 && rawStatus <= 599 ? rawStatus : 500;
   const type = String(err?.type || err?.name || 'Error').replace(/[^A-Za-z0-9._-]/g, '').slice(0, 80) || 'Error';
@@ -305,14 +317,35 @@ app.use((err, req, res, next) => {
   res.status(status).json({ error: '요청을 처리하지 못했어요' });
 });
 
-app.listen(PORT, HOST, () => {
-  console.log(`O-Brain 로컬 서버 ▶ http://${HOST}:${PORT}  (임베딩: ${embedMode()})`);
-  // 시작 시 데이터 안전망 — 자동 백업(PRD 05 §4)
+const server = app.listen(PORT, HOST, () => {
+  console.log(`[server:ready] host=${HOST} port=${PORT} embed=${embedMode()}`);
   backupOnce({ tag: 'startup' })
     .then(r => {
-      console.log(`[backup] 스냅샷 저장: ${r.dest} (보관 ${r.total}개)`);
-      try { const n = applyConfidenceDecay(db); if (n > 0) console.log(`[decay] 신뢰도 감쇠 적용: ${n}개`); }
-      catch (e) { console.error('[decay] 실패(무시):', e?.message); }
+      console.log(`[backup] created=true retained=${r.total}`);
+      try { const n = applyConfidenceDecay(db); if (n > 0) console.log(`[decay] updated=${n}`); }
+      catch (e) { logOperationError('decay', e); }
     })
-    .catch(e => console.error('[backup] 실패(무시):', e?.message));
+    .catch(e => logOperationError('backup.startup', e));
 });
+
+server.on('error', error => {
+  logOperationError('server.listen', error);
+  try { db.close(); } catch {}
+  process.exitCode = 1;
+});
+
+let shuttingDown = false;
+function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log(`[server:shutdown] signal=${signal}`);
+  const timer = setTimeout(() => process.exit(1), 5000);
+  timer.unref();
+  server.close(() => {
+    clearTimeout(timer);
+    try { db.close(); } catch {}
+    process.exit(0);
+  });
+}
+process.once('SIGINT', () => shutdown('SIGINT'));
+process.once('SIGTERM', () => shutdown('SIGTERM'));

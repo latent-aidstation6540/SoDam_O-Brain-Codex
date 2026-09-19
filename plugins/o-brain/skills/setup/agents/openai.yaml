@@ -1,0 +1,4 @@
+interface:
+  display_name: "o-brain:setup"
+  short_description: "O-Brain을 처음 설치한 뒤 필요한 Node.js 의존성과 로컬 설정 폴더를 준비한다."
+  default_prompt: "Use $o-brain:setup to run this O-Brain command."
