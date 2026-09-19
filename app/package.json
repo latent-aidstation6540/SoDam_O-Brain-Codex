@@ -16,10 +16,17 @@
     "backup": "node --env-file-if-exists=.env.local src/backup-cli.mjs",
     "start": "node --env-file-if-exists=.env.local src/server.mjs",
     "test:transcript": "node src/transcript-selftest.mjs",
-    "test": "npm run test:transcript && npm run test:hooks && npm run test:mcp && npm run test:server && npm run selftest",
+    "test": "npm run test:transcript && npm run test:hooks && npm run test:mcp && npm run test:server && npm run test:cli && npm run selftest",
     "test:mcp": "node src/mcp-selftest.mjs",
     "test:hooks": "node src/hook-selftest.mjs",
-    "test:server": "node src/server-selftest.mjs"
+    "test:server": "node src/server-selftest.mjs",
+    "lint": "cd .. && node app/node_modules/eslint/bin/eslint.js --config eslint.config.mjs app/src app/e2e plugins/o-brain/hooks plugins/o-brain/scripts scripts",
+    "typecheck": "tsc -p jsconfig.verify.json",
+    "test:cli": "node src/cli-log-selftest.mjs",
+    "test:scale": "node src/scale-selftest.mjs",
+    "test:e2e": "playwright test -c playwright.config.mjs",
+    "verify:package": "node ../scripts/check-plugin-package.mjs",
+    "verify": "npm run lint && npm run typecheck && npm test && npm run test:scale && npm run test:e2e && npm run verify:package"
   },
   "dependencies": {
     "@huggingface/transformers": "^4.3.0",
@@ -34,6 +41,10 @@
     "adm-zip": "^0.6.1"
   },
   "devDependencies": {
-    "marked": "^16.4.2"
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^26.6.2",
+    "eslint": "^10.11.0",
+    "marked": "^16.4.2",
+    "typescript": "^7.0.2"
   }
 }
