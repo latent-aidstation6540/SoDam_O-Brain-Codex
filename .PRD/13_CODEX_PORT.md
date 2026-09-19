@@ -11,9 +11,8 @@
 - `.agents/plugins/marketplace.json`: `o-brain-codex` 로컬 marketplace
 - `plugins/o-brain/`: 설치 가능한 최소 Codex 플러그인 패키지
 - `plugins/o-brain/.codex-plugin/plugin.json`: Codex manifest
-- `plugins/o-brain/plugin.json`: Agent Plugins 1.0 호환 manifest와 hook 선언
 - `plugins/o-brain/.mcp.json`: `scripts/start-mcp.mjs`를 통한 stdio MCP
-- `plugins/o-brain/hooks/`: `SessionStart` 되읽기, `SessionEnd` 자동 저장
+- `plugins/o-brain/hooks/`: `SessionStart` 되읽기, `Stop` 자동 저장
 - `plugins/o-brain/skills/`: setup/open/status/backup/selftest/remember/link
 - `app/`: 개발 기준 앱과 전체 자동 테스트
 - `plugins/o-brain/app/`: 설치 패키지용 추적 파일 복사본

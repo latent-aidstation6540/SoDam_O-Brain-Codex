@@ -30,7 +30,7 @@ O-Brain is a personal, local memory plugin that stores user-confirmed decisions,
 
 | Feature | Description |
 |---|---|
-| Automatic capture | A Codex `SessionEnd` hook finds confirmed statements in recent conversation and saves them. Questions, casual chat, and AI replies are excluded. |
+| Automatic capture | A Codex `Stop` hook finds confirmed statements in recent conversation and saves them. Questions, casual chat, and AI replies are excluded. |
 | Automatic recall | A `SessionStart` hook selects a small set of memories related to the current project and adds them to Codex context. |
 | Seven MCP tools | Search, save, single-item retrieval, related items, timeline, relation creation, and category listing. |
 | Local search | Combines FTS5 keyword search with 384-dimensional local embeddings. |
@@ -45,7 +45,7 @@ O-Brain does not store everything you say. Rule-based extraction selects user st
 | Item | Current status |
 |---|---|
 | Primary environment | Windows 10/11 with the Codex app or CLI |
-| Actually verified versions | Node.js `v26.7.0`, npm `11.6.2`, Codex CLI `0.154.0` |
+| Actually verified versions | Node.js `v26.7.0`, npm `11.6.2`, Codex CLI `0.155.1` |
 | Network | Required for installation, dependencies, and first model download. Memory storage and search are local |
 | Mobile | The 390px-wide layout was checked, but phone access is unsupported because the server is limited to the same PC |
 | Login/account | O-Brain has no account or login system. Codex access belongs to the OpenAI account layer |
@@ -56,11 +56,16 @@ Verified behavior is separated from unverified scope. “Supported” here means
 
 ## Prerequisites and Required Software
 
-- Windows 10/11, or a computer that can run Node.js 26.7.x
-- **Node.js 26.7.x** and npm 11.x
-- Codex desktop or Codex CLI with plugin support
-- Internet access for the first `npm ci` and embedding model download
-- At least 1 GB of free space recommended for Node dependencies and the local model cache
+Programs to install first:
+
+| Program | Why it is needed | Official download or guide |
+|---|---|---|
+| Windows 10/11 computer | Operating system live-verified for this release | Use the PowerShell included with Windows |
+| Node.js 26.7.x + npm 11.x | Runs the local server, database, and tests | [Official Node.js v26.7.0 download](https://nodejs.org/en/download/archive/v26.7.0) |
+| Codex app or Codex CLI | Loads the O-Brain plugin and processes conversations | [Codex app guide](https://developers.openai.com/codex/app) · [Codex CLI guide](https://developers.openai.com/codex/cli) |
+| Git (optional) | Used for `git clone` installation and later updates | [Official Git for Windows installer](https://git-scm.com/install/windows). Skip it for ZIP or remote Marketplace installation |
+
+Internet access is required for the first `npm ci` and embedding-model download. At least 1 GB of free space is recommended for Node dependencies and the local model cache.
 
 Beginner terms:
 
@@ -81,7 +86,7 @@ npm --version
 codex --version
 ```
 
-This port was verified with Node.js `v26.7.0`, npm `11.6.2`, and Codex CLI `0.154.0`. Other versions may work, but they are not claimed as verified here.
+This port was verified with Node.js `v26.7.0`, npm `11.6.2`, and Codex CLI `0.155.1`. Other versions may work, but they are not claimed as verified here.
 
 ## Download and Installation
 
@@ -207,7 +212,7 @@ These commands remove the plugin but do not automatically delete personal data. 
 1. Open a new Codex task after installation.
 2. Run `$o-brain-setup` once.
 3. State a confirmed decision, for example: “We decided to use port 7740 for this project's tests.”
-4. End the task normally. The `SessionEnd` hook redacts secrets and saves candidates.
+4. End the task normally. The `Stop` hook redacts secrets and saves candidates.
 5. Start a new task. The `SessionStart` hook recalls related memories into context.
 6. Run `$o-brain-open` to inspect the dashboard.
 
@@ -232,6 +237,18 @@ Open `http://127.0.0.1:7740/`. Direct `npm start` uses `app/data/` by default. C
 
 ### Codex skills
 
+Type `/o-brain:open` in the composer, select `o-brain:open` from autocomplete, then send the message. Select other commands using the same names in the table below. In Codex, selecting a slash-menu skill attaches that skill to the message. If the list does not appear, fully quit and reopen Codex to reload installation information. The plugin must be installed in the Codex configuration directory used by the desktop app. Submitting the command text without selecting the menu item has not been separately verified.
+
+| Original Claude Code command | Codex menu name | Explicit Codex invocation | Behavior |
+|---|---|---|---|
+| `/o-brain:open` | `o-brain:open` | `$o-brain:open` | Check/start the server and open the dashboard |
+| `/o-brain:status` | `o-brain:status` | `$o-brain:status` | Show memory counts, recent memories, and hook status |
+| `/o-brain:backup` | `o-brain:backup` | `$o-brain:backup` | Create a safe SQLite backup |
+| `/o-brain:selftest` | `o-brain:selftest` | `$o-brain:selftest` | Run checks in a temporary database |
+| `/o-brain:remember` | `o-brain:remember` | `$o-brain:remember` | Save confirmed user decisions after checking duplicates |
+| `/o-brain:link` | `o-brain:link` | `$o-brain:link` | Link memory relations only after user confirmation |
+
+The additional setup helper is `$o-brain:setup`. The existing `$o-brain-*` skills below remain available. Desktop and CLI installations are separate when their Codex homes differ. Successful CLI execution alone does not prove desktop installation. Restart Codex if the menu does not refresh.
 | Skill | Purpose |
 |---|---|
 | `$o-brain-setup` | Install dependencies and run the first self-test |
@@ -292,9 +309,14 @@ node plugins/o-brain/scripts/o-brain-cli.mjs selftest
 Inside `app/`:
 
 ```powershell
-npm test                 # parser + hooks + MCP + HTTP + core DB
+npm test                 # parser + hooks + MCP + HTTP + CLI logs + core DB
+npm run lint             # code errors and risky patterns
+npm run typecheck        # JavaScript type checks
+npm run test:scale       # isolated 10,000-record scale test
+npm run test:e2e         # real Chromium UI, mobile, and error states
+npm run verify           # all checks plus package synchronization
 npm run test:transcript # Codex/Claude transcript parser
-npm run test:hooks      # SessionStart/SessionEnd
+npm run test:hooks      # SessionStart/Stop
 npm run test:mcp        # stdio handshake + seven tools
 npm run test:server     # auth/CORS/input/CRUD
 npm run selftest        # save/redact/search/relation/graph/delete
@@ -303,7 +325,8 @@ npm run backup
 npm start
 ```
 
-No separate lint or TypeScript type-check configuration exists. This is a pure JavaScript ESM project. Release checks use `node --check`, JSON parsing, and the official plugin validator.
+ESLint, JavaScript type checks, a 10,000-record scale test, Chromium E2E, and package synchronization checks are configured.
+`npm run verify` is the complete pre-release quality gate, and GitHub Actions runs the same checks.
 
 ## Files and Data Locations
 
@@ -311,7 +334,6 @@ No separate lint or TypeScript type-check configuration exists. This is a pure J
 |---|---|---|
 | `plugins/o-brain/.codex-plugin/plugin.json` | Codex plugin manifest | Yes |
 | `.agents/plugins/marketplace.json` | Local marketplace | Yes |
-| `plugins/o-brain/plugin.json` | Agent Plugins 1.0-compatible manifest | Yes |
 | `plugins/o-brain/.mcp.json` | O-Brain MCP registration | Yes |
 | `plugins/o-brain/hooks/` | Codex start/end hooks | Yes |
 | `plugins/o-brain/skills/` | Seven Codex skills | Yes |
@@ -326,6 +348,7 @@ No separate lint or TypeScript type-check configuration exists. This is a pure J
 | `plugins/o-brain/app/` | Installable app copy without development data | Yes |
 | `%LOCALAPPDATA%\SoDamAI\O-Brain\data` | Plugin-mode personal DB, backups, exports | **No** |
 | `%LOCALAPPDATA%\SoDamAI\O-Brain\.env.local` | Optional user configuration | **No** |
+| `%LOCALAPPDATA%\SoDamAI\O-Brain\logs\server.log` | Server runtime/error log (rotates at 1 MB; keeps three) | **No** |
 | `app/data/` | Direct-source and test data | **No** |
 
 Environment variables:
@@ -349,7 +372,7 @@ Codex session starts
   -> add a small set of related memories to Codex context
 
 Codex session ends
-  -> SessionEnd hook
+  -> Stop hook
   -> parse user/assistant messages from Codex JSONL
   -> remove host text, quotes, and questions
   -> redact secrets
@@ -376,9 +399,10 @@ Input → secret/format checks → local SQLite → local FTS5/embedding search 
 - API requests require an ephemeral token generated on each server start and compared with `timingSafeEqual`.
 - External origins are rejected; CSP, frame blocking, and MIME sniffing protection are enabled.
 - JSON bodies are limited to 64 KB, and search text, saved content, and page sizes have bounds.
-- Missing updates return `404`, invalid input `400`, and auth failures `401`/`403`.
+- Missing updates return `404`, invalid input `400`, and auth failures `403`.
 - API failures appear as error states instead of empty lists.
 - Request-error logs keep status/type only, without bodies, paths, or stacks.
+- Server output and errors go to local `logs/server.log`, rotate at 1 MB, and the status command shows only redacted recent issues.
 - Patterns such as `sk-...`, tokens, and passwords are replaced with `[REDACTED:type]` before extraction.
 - Hook payloads are not dumped to diagnostic files.
 - Databases, backups, env files, and model caches are excluded from Git.
@@ -402,8 +426,8 @@ The default policy keeps the latest seven backups. Backups may contain private c
 <details>
 <summary><strong>v0.2.0 — Codex port and final hardening (2026-09-16)</strong></summary>
 
-- Added Codex-standard `.codex-plugin`, marketplace, and Agent Plugins 1.0 manifests
-- Added Codex `SessionStart`/`SessionEnd` hooks with `${PLUGIN_ROOT}` and Windows commands
+- Added Codex-standard `.codex-plugin` and marketplace manifests
+- Added Codex `SessionStart`/`Stop` hooks with `${PLUGIN_ROOT}` and Windows commands
 - Added parsing for Codex `response_item`, `turn_context`, `custom_tool_call`, and `function_call`
 - Added automatic MCP stdio registration and verified all seven tools
 - Converted Claude slash commands into seven Codex skills
@@ -484,6 +508,7 @@ O-Brain is provided under the **Apache License, Version 2.0** (SPDX `Apache-2.0`
 | Source redistribution, sale, service operation | Allowed; provide LICENSE/NOTICE/third-party notices and follow service terms |
 | Company or client delivery | Conditional; legal/professional review of actual files and contracts required |
 | Distribution with binaries or `node_modules` | Legal/professional review of sharp/libvips LGPL duties required |
+| Redistribution of model files or caches | Verify and include the actual all-MiniLM-L6-v2 LICENSE/notices; legal/professional review recommended |
 
 Do not:
 

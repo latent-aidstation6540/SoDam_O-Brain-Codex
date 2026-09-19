@@ -1,7 +1,7 @@
 {
   "name": "o-brain",
-  "version": "0.2.0",
-  "description": "Codex 대화를 로컬에 기억하고 다음 작업에 되찾아 주는 개인 메모리 플러그인입니다.",
+  "version": "0.2.0+codex.20260919174108",
+  "description": "Codex \ub300\ud654\ub97c \ub85c\uceec\uc5d0 \uae30\uc5b5\ud558\uace0 \ub2e4\uc74c \uc791\uc5c5\uc5d0 \ub418\ucc3e\uc544 \uc8fc\ub294 \uac1c\uc778 \uba54\ubaa8\ub9ac \ud50c\ub7ec\uadf8\uc778\uc785\ub2c8\ub2e4.",
   "author": {
     "name": "SoDam AI Studio",
     "url": "https://github.com/sodam-ai"
@@ -18,8 +18,8 @@
   "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "O-Brain",
-    "shortDescription": "Codex용 로컬 개인 메모리",
-    "longDescription": "Codex 세션을 로컬 SQLite에 안전하게 기억하고, MCP 검색과 세션 훅으로 관련 기억을 다시 제공합니다.",
+    "shortDescription": "Codex\uc6a9 \ub85c\uceec \uac1c\uc778 \uba54\ubaa8\ub9ac",
+    "longDescription": "Codex \uc138\uc158\uc744 \ub85c\uceec SQLite\uc5d0 \uc548\uc804\ud558\uac8c \uae30\uc5b5\ud558\uace0, MCP \uac80\uc0c9\uacfc \uc138\uc158 \ud6c5\uc73c\ub85c \uad00\ub828 \uae30\uc5b5\uc744 \ub2e4\uc2dc \uc81c\uacf5\ud569\ub2c8\ub2e4.",
     "developerName": "SoDam AI Studio",
     "category": "Productivity",
     "capabilities": [
@@ -27,9 +27,9 @@
       "Write"
     ],
     "defaultPrompt": [
-      "O-Brain 상태를 확인해줘.",
-      "이번 대화의 확정된 결정을 O-Brain에 기억해줘.",
-      "이 프로젝트와 관련된 과거 기억을 찾아줘."
+      "O-Brain \uc0c1\ud0dc\ub97c \ud655\uc778\ud574\uc918.",
+      "\uc774\ubc88 \ub300\ud654\uc758 \ud655\uc815\ub41c \uacb0\uc815\uc744 O-Brain\uc5d0 \uae30\uc5b5\ud574\uc918.",
+      "\uc774 \ud504\ub85c\uc81d\ud2b8\uc640 \uad00\ub828\ub41c \uacfc\uac70 \uae30\uc5b5\uc744 \ucc3e\uc544\uc918."
     ],
     "brandColor": "#4F7669"
   }

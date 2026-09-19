@@ -110,8 +110,9 @@ export function detectProject(transcriptPath, fallback = null) {
     const add = (value, weight) => {
       if (!value || typeof value !== 'string') return;
       const candidates = [value];
-      for (const match of value.matchAll(/[A-Za-z]:\\[^\"'\r\n<>|]+/g)) candidates.push(match[0].trim());
-      for (const path of candidates) {
+      for (const match of value.matchAll(/[A-Za-z]:\\[^"'\r\n<>|]+/g)) candidates.push(match[0].trim());
+      for (const rawPath of candidates) {
+        const path = rawPath.replace(/\\{2,}/g, '\\');
         if (!/^[A-Za-z]:\\/.test(path) || skip.test(path)) continue;
         const root = projectRootOf(path, cache);
         if (root) rootCount[root] = (rootCount[root] || 0) + weight;
@@ -186,7 +187,7 @@ export function stripInjected(text) {
   return t.replace(/[ \t]{2,}/g, ' ').trim();
 }
 
-export async function captureSession({ transcriptPath, projectPath, tool } = {}) {
+export async function captureSession(/** @type {{ transcriptPath?: string, projectPath?: string, tool?: string }} */ { transcriptPath, projectPath, tool } = {}) {
   // 입력 검증(방어) — 실제 .jsonl 파일만 읽음(임의 파일 읽기 차단)
   if (!transcriptPath || !String(transcriptPath).endsWith('.jsonl') || !existsSync(transcriptPath)) {
     return { exchanges: 0, candidates: 0, saved: [] };

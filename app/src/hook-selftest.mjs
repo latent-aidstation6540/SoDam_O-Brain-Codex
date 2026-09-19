@@ -1,15 +1,13 @@
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..', '..');
 const pluginRoot = existsSync(join(root, 'hooks')) ? root : join(root, 'plugins', 'o-brain');
-const tempRoot = join(root, 'app', 'data');
-mkdirSync(tempRoot, { recursive: true });
-const temp = mkdtempSync(join(tempRoot, '_hook-selftest-'));
+const temp = mkdtempSync(join(root, 'app', '_hook-selftest-'));
 const data = join(temp, 'data');
 const project = join(temp, 'project');
 mkdirSync(join(project, '.git'), { recursive: true });
@@ -35,7 +33,18 @@ function runHook(file, payload) {
 }
 
 try {
-  const extracted = await runHook('memory-extract-hook.mjs', { transcript_path: transcript, cwd: project, hook_event_name: 'SessionEnd' });
+  const compatibilityManifest = JSON.parse(readFileSync(join(pluginRoot, '.codex-plugin', 'plugin.json'), 'utf8'));
+  assert.equal(compatibilityManifest.hooks, undefined);
+  const hooksConfig = JSON.parse(readFileSync(join(pluginRoot, 'hooks', 'hooks.json'), 'utf8'));
+  assert.ok(Array.isArray(hooksConfig.hooks?.SessionStart));
+  assert.ok(Array.isArray(hooksConfig.hooks?.Stop));
+  assert.equal(hooksConfig.hooks?.SessionEnd, undefined);
+  assert.match(hooksConfig.hooks.Stop[0].hooks[0].command, /memory-extract-hook\.mjs/);
+  assert.match(hooksConfig.hooks.SessionStart[0].hooks[0].commandWindows, /process\.env\.PLUGIN_ROOT/);
+  assert.match(hooksConfig.hooks.Stop[0].hooks[0].commandWindows, /process\.env\.PLUGIN_ROOT/);
+  assert.doesNotMatch(hooksConfig.hooks.Stop[0].hooks[0].commandWindows, /%PLUGIN_ROOT%/);
+
+  const extracted = await runHook('memory-extract-hook.mjs', { transcript_path: transcript, cwd: project, hook_event_name: 'Stop' });
   assert.match(extracted.stderr, /저장 1건/);
   assert.doesNotMatch(extracted.stderr, /sk-test-secret-value/);
   process.env.OBRAIN_DATA_DIR = data;
@@ -49,14 +58,20 @@ try {
   assert.doesNotMatch(memory.content, /sk-test-secret-value/);
   db.close();
 
+  const status = spawnSync(process.execPath, [join(root, 'app', 'src', 'status.mjs')], {
+    env: { ...process.env, OBRAIN_DATA_DIR: data }, encoding: 'utf8'
+  });
+  assert.equal(status.status, 0, status.stderr);
+  assert.match(status.stdout, /훅 발화\s+: 예/);
+
   const injected = await runHook('memory-inject-hook.mjs', { transcript_path: transcript, cwd: project, hook_event_name: 'SessionStart' });
   const output = JSON.parse(injected.stdout);
   assert.equal(output.continue, true);
   assert.equal(output.hookSpecificOutput?.hookEventName, 'SessionStart');
   assert.match(output.hookSpecificOutput?.additionalContext || '', /O-Brain/);
-  console.log('✅ SessionEnd capture, Codex tool/project, secret redaction, SessionStart injection');
+  console.log('✅ Stop registration/capture/status, Codex tool/project, secret redaction, SessionStart injection');
 } finally {
-  await new Promise(resolve => setTimeout(resolve, 750));
+  await new Promise(resolve => { setTimeout(resolve, 750); });
   try { rmSync(temp, { recursive: true, force: true, maxRetries: 8, retryDelay: 150 }); }
   catch (error) { console.warn('[selftest] 임시 폴더 정리 보류:', error.code); }
 }

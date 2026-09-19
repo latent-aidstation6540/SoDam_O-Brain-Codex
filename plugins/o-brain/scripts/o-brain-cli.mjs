@@ -2,6 +2,7 @@ import { existsSync, copyFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { APP_ROOT, CONFIG_DIR, prepareRuntime } from './runtime.mjs';
+import { openServerLog, readRecentServerIssues } from './server-log.mjs';
 
 const command = process.argv[2] || 'help';
 const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
@@ -19,9 +20,13 @@ function run(bin, args, options = {}) {
   process.exitCode = result.status ?? 1;
 }
 
-async function health(port) {
+async function health(port, dataDir) {
   try {
-    const response = await fetch(`http://127.0.0.1:${port}/api/health`, { signal: AbortSignal.timeout(1500) });
+    const token = readFileSync(join(dataDir, '.api-token'), 'utf8').trim();
+    if (!/^[a-f0-9]{32}$/.test(token)) return false;
+    const response = await fetch(`http://127.0.0.1:${port}/api/health`, {
+      headers: { 'x-obrain-token': token }, signal: AbortSignal.timeout(1500)
+    });
     return response.ok;
   } catch { return false; }
 }
@@ -42,21 +47,35 @@ if (command === 'setup') {
   if (process.platform === 'win32') run(process.env.ComSpec || 'cmd.exe', ['/d', '/s', '/c', 'npm.cmd ci --omit=dev --no-audit --no-fund']);
   else run(npm, ['ci', '--omit=dev', '--no-audit', '--no-fund']);
 } else if (command === 'open') {
-  prepareRuntime();
+  const { dataDir, configDir } = prepareRuntime();
   const port = Number(process.env.OBRAIN_PORT || 7740);
+  const logFile = join(configDir, 'logs', 'server.log');
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('OBRAIN_PORT는 1~65535 범위의 정수여야 합니다.');
-  if (!(await health(port))) {
-    const child = spawn(node, [join(APP_ROOT, 'src', 'server.mjs')], { cwd: APP_ROOT, env: process.env, detached: true, stdio: 'ignore' });
-    child.unref();
-    for (let i = 0; i < 20 && !(await health(port)); i++) await new Promise(resolve => setTimeout(resolve, 500));
+  if (!(await health(port, dataDir))) {
+    const serverLog = openServerLog(configDir);
+    try {
+      const child = spawn(node, [join(APP_ROOT, 'src', 'server.mjs')], {
+        cwd: APP_ROOT, env: process.env, detached: true, stdio: serverLog.stdio
+      });
+      child.unref();
+    } finally { serverLog.close(); }
+    for (let i = 0; i < 120 && !(await health(port, dataDir)); i++) await new Promise(resolve => { setTimeout(resolve, 500); });
   }
-  if (!(await health(port))) throw new Error(`O-Brain 서버가 시작되지 않았습니다. 포트 ${port}와 서버 로그를 확인하세요.`);
+  if (!(await health(port, dataDir))) throw new Error(`O-Brain 서버가 시작되지 않았습니다. 포트 ${port}, 로그 ${logFile}를 확인하세요.`);
   const url = `http://127.0.0.1:${port}/`;
   openBrowser(url);
   console.log(`[o-brain] 대시보드: ${url}`);
+  console.log(`[o-brain] 서버 로그: ${logFile}`);
 } else if (scriptMap[command]) {
-  prepareRuntime();
+  const { configDir } = prepareRuntime();
   run(node, [join(APP_ROOT, 'src', scriptMap[command])]);
+  if (command === 'status') {
+    const logFile = join(configDir, 'logs', 'server.log');
+    const issues = readRecentServerIssues(logFile);
+    console.log(`[o-brain] 서버 로그: ${logFile}`);
+    if (issues.length) console.log(`[o-brain] 최근 서버 경고 ${issues.length}건:\n${issues.join('\n')}`);
+    else console.log('[o-brain] 최근 서버 오류 없음');
+  }
 } else {
   console.log('사용법: node scripts/o-brain-cli.mjs <setup|open|status|backup|selftest|seed>');
   process.exitCode = command === 'help' ? 0 : 2;

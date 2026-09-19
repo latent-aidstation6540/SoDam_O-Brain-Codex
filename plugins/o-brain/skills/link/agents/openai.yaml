@@ -1,0 +1,4 @@
+interface:
+  display_name: "o-brain:link"
+  short_description: "관련 기억 사이의 번복, 뒷받침, 영향, 충돌 관계를 사용자의 확인을 거쳐 연결한다."
+  default_prompt: "Use $o-brain:link to run this O-Brain command."

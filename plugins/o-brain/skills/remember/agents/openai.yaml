@@ -1,0 +1,4 @@
+interface:
+  display_name: "o-brain:remember"
+  short_description: "현재 대화에서 사용자가 확정한 결정, 제약, 선호, 패턴, 지식을 O-Brain MCP에 수동 저장한다."
+  default_prompt: "Use $o-brain:remember to run this O-Brain command."

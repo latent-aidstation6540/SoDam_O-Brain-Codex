@@ -2,7 +2,7 @@
 
 ## Product
 
-O-Brain is a local-first personal memory plugin for Codex. It captures confirmed user decisions at `SessionEnd`, recalls related memories at `SessionStart`, exposes seven MCP tools, and serves a local dashboard on `127.0.0.1`.
+O-Brain is a local-first personal memory plugin for Codex. It captures confirmed user decisions at `Stop`, recalls related memories at `SessionStart`, exposes seven MCP tools, and serves a local dashboard on `127.0.0.1`.
 
 ## Source of truth
 
@@ -19,9 +19,9 @@ Claude-specific paths in older PRDs are historical. Do not restore the removed `
 
 - Marketplace catalog: `.agents/plugins/marketplace.json`
 - Installable plugin root: `plugins/o-brain/`
-- Plugin manifests: `plugins/o-brain/.codex-plugin/plugin.json`, `plugins/o-brain/plugin.json`, `plugins/o-brain/.mcp.json`
+- Plugin manifests: `plugins/o-brain/.codex-plugin/plugin.json`, `plugins/o-brain/.mcp.json`
 - Hooks: `plugins/o-brain/hooks/memory-inject-hook.mjs`, `plugins/o-brain/hooks/memory-extract-hook.mjs`
-- Skills: `plugins/o-brain/skills/o-brain-*`
+- Skills: `plugins/o-brain/skills/<command>/` (original command names), plus `o-brain-*` compatibility skills
 - Runtime launchers: `plugins/o-brain/scripts/`
 - Development app and tests: `app/src/` and `app/web/`
 - Packaged app copy: `plugins/o-brain/app/` (must match the tracked development app files)

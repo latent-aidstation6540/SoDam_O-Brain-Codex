@@ -3,11 +3,10 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { detectProject, detectTranscriptHost, parseTranscript, stripInjected } from './extract-session.mjs';
+import { ruleExtract } from './extract.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const tempRoot = join(here, '..', 'data');
-mkdirSync(tempRoot, { recursive: true });
-const temp = mkdtempSync(join(tempRoot, '_transcript-selftest-'));
+const temp = mkdtempSync(join(here, '..', '_transcript-selftest-'));
 try {
   const project = join(temp, 'sample-project');
   mkdirSync(join(project, '.git'), { recursive: true });
@@ -28,6 +27,13 @@ try {
   ]);
   assert.equal(detectProject(codexPath), project);
 
+  const escapedCodexPath = join(temp, 'codex-escaped-path.jsonl');
+  writeFileSync(escapedCodexPath, [
+    { type: 'turn_context', payload: { cwd: temp } },
+    { type: 'response_item', payload: { type: 'custom_tool_call', input: project.replaceAll('\\', '\\\\') + '\\\\README.md' } }
+  ].map(JSON.stringify).join('\n'));
+  assert.equal(detectProject(escapedCodexPath), project);
+
   const claudePath = join(temp, 'claude.jsonl');
   writeFileSync(claudePath, [
     { type: 'user', message: { role: 'user', content: [{ type: 'text', text: '한국어를 기본 언어로 사용하자.' }] } },
@@ -39,9 +45,10 @@ try {
   const stripped = stripInjected('<environment_context>비공개 설정</environment_context>\n실제 결정은 로컬 저장이다.');
   assert.equal(stripped, '실제 결정은 로컬 저장이다.');
   assert.equal(detectProject(join(temp, 'missing.jsonl'), project), project);
+  assert.deepEqual(ruleExtract([{ role: 'user', text: '절대 하지 말 것:' }]), []);
   console.log('✅ Codex/Claude transcript parsing, malformed input, injection stripping, project detection');
 } finally {
-  await new Promise(resolve => setTimeout(resolve, 750));
+  await new Promise(resolve => { setTimeout(resolve, 750); });
   try { rmSync(temp, { recursive: true, force: true, maxRetries: 8, retryDelay: 150 }); }
   catch (error) { console.warn('[selftest] 임시 폴더 정리 보류:', error.code); }
 }

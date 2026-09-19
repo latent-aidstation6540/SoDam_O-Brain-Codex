@@ -26,7 +26,7 @@ async function waitForServer() {
   for (let i = 0; i < 120; i++) {
     try { const response = await fetch(base); if (response.ok) return response.text(); } catch {}
     if (child.exitCode != null) throw new Error(`server exited ${child.exitCode}: ${logs.slice(-1000)}`);
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => { setTimeout(resolve, 500); });
   }
   throw new Error(`server timeout: ${logs.slice(-1000)}`);
 }
@@ -52,6 +52,9 @@ try {
   assert.equal(createdResponse.status, 201);
   const created = await createdResponse.json();
   assert.ok(created.id > 0);
+  const invalidRelation = await fetch(`${base}/api/relation`, { method: 'POST', headers: { ...headers, 'content-type': 'application/json' }, body: JSON.stringify({ from_id: created.id, to_id: 999999999, type: 'invalid-type' }) });
+  assert.equal(invalidRelation.status, 400);
+  assert.deepEqual(await invalidRelation.json(), { error: '잘못된 관계 유형' });
   assert.equal((await fetch(`${base}/api/memory/${created.id}`, { headers })).status, 200);
   const patched = await fetch(`${base}/api/memory/${created.id}`, { method: 'PATCH', headers: { ...headers, 'content-type': 'application/json' }, body: JSON.stringify({ importance: 5 }) });
   assert.equal(patched.status, 200);
@@ -62,13 +65,13 @@ try {
   assert.ok(Array.isArray(await listing.json()));
   assert.equal((await fetch(`${base}/api/memory/${created.id}`, { method: 'DELETE', headers })).status, 200);
   assert.equal((await fetch(`${base}/api/memory/${created.id}`, { headers })).status, 404);
-  await new Promise(resolve => setTimeout(resolve, 50));
+  await new Promise(resolve => { setTimeout(resolve, 50); });
   assert.doesNotMatch(logs, /OBRAIN_LOG_LEAK_SENTINEL|node_modules|server\.mjs:\d+/);
   console.log('✅ HTTP auth/CORS, invalid input, malformed JSON, safe logs, memory CRUD, boundary pagination');
 } finally {
   child.kill();
-  await new Promise(resolve => child.once('close', resolve)).catch(() => {});
-  await new Promise(resolve => setTimeout(resolve, 750));
+  await new Promise(resolve => { child.once('close', resolve); }).catch(() => {});
+  await new Promise(resolve => { setTimeout(resolve, 750); });
   try { rmSync(temp, { recursive: true, force: true, maxRetries: 8, retryDelay: 150 }); }
   catch (error) { console.warn('[selftest] 임시 폴더 정리 보류:', error.code); }
 }

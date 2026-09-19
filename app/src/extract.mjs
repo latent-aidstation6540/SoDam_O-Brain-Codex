@@ -26,7 +26,7 @@ export function ruleExtract(exchanges, { max = 8 } = {}) {
     const parts = rawText
       .split(/[.!?。\n·]|(?<=다)\s|(?<=요)\s/)
       .map(s => s.trim())
-      .filter(s => s.length >= 6 && s.length <= 160 && !QUOTE_RE.test(s));
+      .filter(s => s.length >= 6 && s.length <= 160 && !/[：:]$/.test(s) && !QUOTE_RE.test(s));
     for (const s of parts) {
       const hit = CUES.find(c => c.re.test(s));
       if (!hit) continue;

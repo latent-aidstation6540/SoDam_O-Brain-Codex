@@ -7,11 +7,11 @@ export function redact(text) {
   const sub = (re, rep) => {
     clean = clean.replace(re, (...a) => { hits++; return typeof rep === 'function' ? rep(...a) : rep; });
   };
-  sub(/sk-[A-Za-z0-9_\-]{16,}/g, '[REDACTED:api-key]');
+  sub(/sk-[A-Za-z0-9_-]{16,}/g, '[REDACTED:api-key]');
   sub(/AKIA[0-9A-Z]{16}/g, '[REDACTED:aws-key]');
   sub(/ghp_[A-Za-z0-9]{20,}/g, '[REDACTED:github-token]');
-  sub(/AIza[0-9A-Za-z_\-]{20,}/g, '[REDACTED:google-key]');
-  sub(/\bBearer\s+[A-Za-z0-9._\-]{8,}/gi, '[REDACTED:bearer]');
+  sub(/AIza[0-9A-Za-z_-]{20,}/g, '[REDACTED:google-key]');
+  sub(/\bBearer\s+[A-Za-z0-9._-]{8,}/gi, '[REDACTED:bearer]');
   sub(/-----BEGIN[\s\S]*?-----END[\s\S]*?-----/g, '[REDACTED:private-key]');
   // SNAKE_CASE 변수명(DATABASE_PASSWORD 등)도 잡도록 키워드가 식별자 중간에 있어도 매칭
   // (밑줄은 정규식 \w에 포함돼 \b가 밑줄 앞뒤에서는 안 끊기므로, 키워드 앞뒤에 \b 대신

@@ -32,7 +32,7 @@ try {
   console.log('✅ MCP stdio handshake, 7 tools, save_memory, get_memory');
 } finally {
   await client.close().catch(() => {});
-  await new Promise(resolve => setTimeout(resolve, 750));
+  await new Promise(resolve => { setTimeout(resolve, 750); });
   try { rmSync(temp, { recursive: true, force: true, maxRetries: 8, retryDelay: 150 }); }
   catch (error) { console.warn('[selftest] 임시 폴더 정리 보류:', error.code); }
 }
