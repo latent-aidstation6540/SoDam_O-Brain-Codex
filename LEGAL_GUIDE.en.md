@@ -2,7 +2,7 @@
 
 [한국어](./LEGAL_GUIDE.md) · [LICENSE](./LICENSE) · [NOTICE](./NOTICE) · [Third-party inventory](./THIRD_PARTY_LICENSES.md)
 
-> Reviewed on 2026-09-16. This document explains verified project facts and is not legal advice. Contracts, trademarks, personal data, regulated use, and binary redistribution **require legal/professional review**.
+> Reviewed on 2026-09-20. This document explains verified project facts and is not legal advice. Contracts, trademarks, personal data, regulated use, and binary redistribution **require legal/professional review**.
 
 ## 1. Verified baseline
 
@@ -39,16 +39,16 @@ Apache-2.0 does not prohibit commercial use, but it does not guarantee rights in
 
 ## 4. External components
 
-- The lockfile has 242 package entries and zero missing license metadata fields.
-- Direct dependencies use Apache-2.0, MIT, or dual licenses.
+- The lockfile has 333 dependency-path entries: 241 runtime and 92 development-only entries, with zero missing license metadata fields.
+- Direct dependencies use Apache-2.0, MIT, or dual licenses. The lockfile also contains `OR`, `AND`, LGPL, CC0, WTFPL, and BlueOak expressions, so the license files in the exact distributed artifacts remain authoritative.
 - Fourteen optional sharp/libvips platform entries contain `LGPL-3.0-or-later`.
-- The all-MiniLM-L6-v2 repository identifies the model as Apache-2.0.
-- Installed files vary by OS and CPU; lockfile metadata alone does not complete binary-license obligations.
+- The all-MiniLM-L6-v2 repository identifies the model as Apache-2.0. It is downloaded into a separate cache on first use; model weights are not included in this repository. Review and provide the model LICENSE/notices if redistributing model files or caches.
+- This source repository currently contains no `node_modules`, installer, executable, or container. Installed files vary by OS and CPU; lockfile metadata alone does not complete binary-license obligations.
 
 ## 5. Code, documentation, images, and samples
 
 - Code and documentation may contain AI-generated or AI-assisted material. Human review of source, similarity, commercial rights, and accuracy is required before publication, sale, or delivery.
-- The five current screenshots were produced from the local project dashboard and contain no PNG text metadata.
+- The five current screenshots (`graph-2d.png`, `list-detail.png`, `overview.png`, `settings.png`, and `timeline.png`) show the local project dashboard and contain no PNG text, EXIF, ICC, or XMP metadata. The repository has no separate external font, video, or audio files and no `public`, `examples`, or `samples` directory.
 - Port numbers, `[REDACTED:api-key]`, and memory statements are synthetic. No real names, emails, customers, or working secrets were found.
 - Linear, Vercel, and shadcn/ui names are dummy examples and do not imply affiliation, sponsorship, endorsement, or trademark rights.
 - The project uses system fonts, project CSS, and inline symbols. Record source and commercial terms for any new image, font, icon, video, audio, or template.
@@ -98,4 +98,6 @@ Unverified rights are not guaranteed.
 - [all-MiniLM-L6-v2 model LICENSE](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/blob/main/LICENSE)
 - [sharp-libvips third-party notices](https://github.com/lovell/sharp-libvips/blob/main/THIRD-PARTY-NOTICES.md)
 - [OpenAI Terms of Use](https://openai.com/policies/terms-of-use/)
-- [OpenAI Business Terms](https://openai.com/policies/business-terms/)
+- [OpenAI Services Agreement (businesses and developers)](https://openai.com/policies/services-agreement/)
+- [OpenAI Service Terms](https://openai.com/policies/service-terms/)
+- [OpenAI App Developer Terms](https://openai.com/policies/developer-apps-terms/)

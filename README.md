@@ -30,7 +30,7 @@ O-Brain은 Codex 대화에서 사용자가 확정한 결정·제약·선호·지
 
 | 기능 | 설명 |
 |---|---|
-| 자동 저장 | Codex `SessionEnd` 훅이 최근 대화에서 확정 문장을 찾아 저장합니다. 질문·잡담·AI 답변은 저장 대상에서 제외합니다. |
+| 자동 저장 | Codex `Stop` 훅이 최근 대화에서 확정 문장을 찾아 저장합니다. 질문·잡담·AI 답변은 저장 대상에서 제외합니다. |
 | 자동 되읽기 | `SessionStart` 훅이 현재 프로젝트와 관련된 기억을 소량 골라 Codex 문맥에 넣습니다. |
 | MCP 7개 도구 | 검색, 저장, 단건 조회, 관련 기억, 타임라인, 관계 추가, 카테고리 목록을 제공합니다. |
 | 로컬 검색 | FTS5 키워드 검색과 384차원 로컬 임베딩 검색을 함께 사용합니다. |
@@ -45,7 +45,7 @@ O-Brain은 사용자의 모든 말을 무조건 저장하지 않습니다. “�
 | 항목 | 현재 상태 |
 |---|---|
 | 주 사용 환경 | Windows 10/11 + Codex 앱/CLI |
-| 실제 검증 버전 | Node.js `v26.7.0`, npm `11.6.2`, Codex CLI `0.154.0` |
+| 실제 검증 버전 | Node.js `v26.7.0`, npm `11.6.2`, Codex CLI `0.155.1` |
 | 네트워크 | 설치·의존성·최초 모델 다운로드에 필요. 기억 저장과 검색은 로컬 처리 |
 | 모바일 | 390px 너비 화면 표시를 확인했지만 서버가 같은 PC 전용이므로 휴대전화 원격 접속은 지원하지 않음 |
 | 로그인·계정 | O-Brain 자체 로그인과 계정 시스템 없음. Codex 사용 권한은 OpenAI 계정 영역 |
@@ -56,11 +56,16 @@ O-Brain은 사용자의 모든 말을 무조건 저장하지 않습니다. “�
 
 ## 사전 준비물과 필요 프로그램
 
-- Windows 10/11 또는 Node.js 26.7.x를 실행할 수 있는 컴퓨터
-- **Node.js 26.7.x**와 npm 11.x
-- 플러그인을 지원하는 Codex 앱 또는 Codex CLI
-- 최초 `npm ci`와 임베딩 모델 다운로드 때의 인터넷 연결
-- 약 1GB 이상의 여유 공간 권장: Node 의존성과 로컬 임베딩 모델 캐시가 포함됩니다.
+처음 설치할 프로그램:
+
+| 프로그램 | 필요한 이유 | 공식 다운로드·확인 위치 |
+|---|---|---|
+| Windows 10/11 컴퓨터 | 이 릴리스에서 실제 검증한 운영체제 | Windows에 기본 포함된 PowerShell 사용 |
+| Node.js 26.7.x + npm 11.x | 로컬 서버·DB·테스트 실행 | [Node.js v26.7.0 공식 다운로드](https://nodejs.org/en/download/archive/v26.7.0) |
+| Codex 앱 또는 Codex CLI | O-Brain 플러그인을 불러오고 대화를 처리 | [Codex 앱 안내](https://developers.openai.com/codex/app) · [Codex CLI 안내](https://developers.openai.com/codex/cli) |
+| Git(선택) | `git clone` 방식과 이후 업데이트에 사용 | [Git for Windows 공식 설치](https://git-scm.com/install/windows). ZIP 또는 원격 Marketplace 방식이면 생략 가능 |
+
+최초 `npm ci`와 임베딩 모델 다운로드에는 인터넷 연결이 필요합니다. Node 의존성과 로컬 모델 캐시를 위해 1GB 이상의 여유 공간을 권장합니다.
 
 처음 보는 용어:
 
@@ -81,7 +86,7 @@ npm --version
 codex --version
 ```
 
-이 포팅을 검증한 버전은 Node.js `v26.7.0`, npm `11.6.2`, Codex CLI `0.154.0`입니다. 다른 버전은 동작할 수 있지만 이 문서에서 확인했다고 보장하지 않습니다.
+이 포팅을 검증한 버전은 Node.js `v26.7.0`, npm `11.6.2`, Codex CLI `0.155.1`입니다. 다른 버전은 동작할 수 있지만 이 문서에서 확인했다고 보장하지 않습니다.
 
 ## 다운로드와 설치
 
@@ -207,7 +212,7 @@ codex plugin marketplace remove o-brain-codex
 1. 설치 후 Codex를 새 작업으로 엽니다.
 2. `$o-brain-setup`을 한 번 실행합니다.
 3. 대화에서 “이 프로젝트의 테스트 포트는 7740으로 사용하기로 결정했다”처럼 확정된 결정을 말합니다.
-4. 작업을 정상 종료합니다. `SessionEnd` 훅이 시크릿을 가린 뒤 후보를 저장합니다.
+4. 작업을 정상 종료합니다. `Stop` 훅이 시크릿을 가린 뒤 후보를 저장합니다.
 5. 새 작업을 열면 `SessionStart` 훅이 관련 기억을 찾아 문맥에 넣습니다.
 6. 화면으로 확인하려면 `$o-brain-open`을 실행합니다.
 
@@ -232,6 +237,18 @@ npm start
 
 ### Codex 스킬
 
+채팅창에 `/o-brain:open`을 입력하고 자동완성의 `o-brain:open` 항목을 선택한 다음 메시지를 전송하세요. 다른 명령도 아래 표의 같은 이름으로 선택합니다. Codex에서는 슬래시 메뉴 선택 시 실행할 스킬이 메시지에 첨부됩니다. 목록이 보이지 않으면 Codex를 완전히 종료하고 다시 열어 설치 정보를 새로 불러오세요. 데스크톱이 사용하는 Codex 설정 폴더에 플러그인이 설치되어 있어야 합니다. 메뉴를 선택하지 않고 명령 문자열만 전송하는 동작은 별도로 검증하지 않았습니다.
+
+| 원본 Claude Code 명령 | Codex 메뉴 이름 | Codex 명시적 호출 | 동작 |
+|---|---|---|---|
+| `/o-brain:open` | `o-brain:open` | `$o-brain:open` | 서버 확인·시작 후 대시보드 열기 |
+| `/o-brain:status` | `o-brain:status` | `$o-brain:status` | 기억 수·최근 기억·훅 상태 확인 |
+| `/o-brain:backup` | `o-brain:backup` | `$o-brain:backup` | 안전한 SQLite 백업 |
+| `/o-brain:selftest` | `o-brain:selftest` | `$o-brain:selftest` | 임시 DB에서 자체 검사 |
+| `/o-brain:remember` | `o-brain:remember` | `$o-brain:remember` | 확정된 사용자 결정만 중복 확인 후 저장 |
+| `/o-brain:link` | `o-brain:link` | `$o-brain:link` | 사용자 확인을 받은 기억 관계만 연결 |
+
+추가 설치 도우미는 `$o-brain:setup`입니다. 아래 기존 `$o-brain-*` 스킬도 유지합니다. 데스크톱과 CLI의 Codex 홈이 다르면 설치 위치도 다릅니다. CLI에서만 실행에 성공했다고 데스크톱 설치가 완료된 것은 아닙니다. 메뉴가 갱신되지 않으면 Codex를 다시 시작하여 확인하세요.
 | 스킬 | 용도 |
 |---|---|
 | `$o-brain-setup` | 최초 의존성 설치와 자체 테스트 |
@@ -292,9 +309,14 @@ node plugins/o-brain/scripts/o-brain-cli.mjs selftest
 `app/` 폴더:
 
 ```powershell
-npm test                 # 파서 + 훅 + MCP + HTTP + 핵심 DB 전체
+npm test                 # 파서 + 훅 + MCP + HTTP + CLI 로그 + 핵심 DB 전체
+npm run lint             # 코드 오류·위험 패턴 검사
+npm run typecheck        # JavaScript 타입 검사
+npm run test:scale       # 임시 DB 1만 건 성능·단순화 검사
+npm run test:e2e         # Chromium 실제 화면·모바일·오류 상태 검사
+npm run verify           # 위 검사와 패키지 일치 검사를 한 번에 실행
 npm run test:transcript # Codex/Claude 로그 파서
-npm run test:hooks      # SessionStart/SessionEnd
+npm run test:hooks      # SessionStart/Stop
 npm run test:mcp        # stdio 연결 + 7개 도구
 npm run test:server     # 인증/CORS/입력/CRUD
 npm run selftest        # 저장/가림/검색/관계/그래프/삭제
@@ -303,7 +325,8 @@ npm run backup
 npm start
 ```
 
-별도 lint와 TypeScript type check는 설정되어 있지 않습니다. 이 프로젝트는 순수 JavaScript ESM이며 `node --check`, JSON 파싱, 공식 플러그인 validator를 배포 전 검사에 사용합니다.
+ESLint, JavaScript 타입 검사, 1만 건 규모 검사, Chromium E2E, 패키지 일치 검사가 설정되어 있습니다.
+`npm run verify`는 배포 전 전체 품질 게이트이며 GitHub Actions에서도 같은 검사를 실행합니다.
 
 ## 파일과 데이터 위치
 
@@ -311,7 +334,6 @@ npm start
 |---|---|---|
 | `plugins/o-brain/.codex-plugin/plugin.json` | Codex 플러그인 manifest | 포함 |
 | `.agents/plugins/marketplace.json` | 로컬 marketplace | 포함 |
-| `plugins/o-brain/plugin.json` | Agent Plugins 1.0 호환 manifest | 포함 |
 | `plugins/o-brain/.mcp.json` | O-Brain MCP 등록 | 포함 |
 | `plugins/o-brain/hooks/` | Codex 시작·종료 훅 | 포함 |
 | `plugins/o-brain/skills/` | 7개 Codex 스킬 | 포함 |
@@ -326,6 +348,7 @@ npm start
 | `plugins/o-brain/app/` | 설치용 앱 복사본(개발 데이터 제외) | 포함 |
 | `%LOCALAPPDATA%\SoDamAI\O-Brain\data` | 플러그인 모드 개인 DB·백업·내보내기 | **제외** |
 | `%LOCALAPPDATA%\SoDamAI\O-Brain\.env.local` | 선택 사용자 설정 | **제외** |
+| `%LOCALAPPDATA%\SoDamAI\O-Brain\logs\server.log` | 서버 실행·오류 로그(1MB 회전, 최근 3개 보관) | **제외** |
 | `app/data/` | 소스 직접 실행/테스트 데이터 | **제외** |
 
 환경 변수:
@@ -349,7 +372,7 @@ Codex 세션 시작
   -> 관련 기억 소량을 Codex 문맥에 추가
 
 Codex 세션 종료
-  -> SessionEnd hook
+  -> Stop hook
   -> Codex JSONL의 user/assistant 문장 파싱
   -> 시스템 문구·인용·질문 제거
   -> 시크릿 가림
@@ -376,9 +399,10 @@ Codex MCP 또는 브라우저
 - API는 서버가 매 실행 시 만든 임시 토큰을 요구하고, 비교에는 `timingSafeEqual`을 사용합니다.
 - 외부 Origin은 거부하고 CSP, frame 차단, MIME sniffing 차단 헤더를 사용합니다.
 - JSON 본문은 64KB, 검색어·저장 내용·페이지 크기에는 상한이 있습니다.
-- 없는 기억 수정은 `404`, 잘못된 입력은 `400`, 인증 실패는 `401`/`403`으로 구분합니다.
+- 없는 기억 수정은 `404`, 잘못된 입력은 `400`, 인증 실패는 `403`으로 구분합니다.
 - API 실패는 빈 목록으로 숨기지 않고 오류 상태로 표시합니다.
 - 요청 오류 로그에는 상태와 유형만 남기며 본문·경로·스택은 남기지 않습니다.
+- 서버 표준 출력·오류는 로컬 `logs/server.log`에 기록하고 1MB마다 회전합니다. 상태 명령은 가림 처리된 최근 오류만 보여 줍니다.
 - `sk-...`, 토큰, 비밀번호 등은 추출 전에 `[REDACTED:종류]`로 바꿉니다.
 - 훅 입력 전체를 진단 파일에 저장하지 않습니다.
 - DB·백업·환경 파일·모델 캐시는 Git에 포함하지 않습니다.
@@ -402,8 +426,8 @@ Codex MCP 또는 브라우저
 <details>
 <summary><strong>v0.2.0 — Codex 포팅 및 최종 안정화 (2026-09-16)</strong></summary>
 
-- Codex 표준 `.codex-plugin`, marketplace, Agent Plugins 1.0 manifest 추가
-- Codex `SessionStart`/`SessionEnd` hook과 `${PLUGIN_ROOT}`/Windows 명령 지원
+- Codex 표준 `.codex-plugin`과 marketplace manifest 추가
+- Codex `SessionStart`/`Stop` hook과 `${PLUGIN_ROOT}`/Windows 명령 지원
 - Codex `response_item`, `turn_context`, `custom_tool_call`, `function_call` 로그 파싱
 - Codex용 MCP stdio 자동 등록과 7개 도구 검증
 - Claude 슬래시 명령을 7개 Codex 스킬로 변환
@@ -484,6 +508,7 @@ O-Brain은 **Apache License, Version 2.0**(SPDX `Apache-2.0`), **Copyright 2026 
 | 소스 재배포·판매·서비스 운영 | 가능. LICENSE·NOTICE·제3자 고지와 외부 서비스 약관 준수 |
 | 회사·고객사 납품 | 조건부 가능. 실제 납품 파일·계약은 법무/전문가 검토 필요 |
 | 바이너리·`node_modules` 포함 배포 | sharp/libvips LGPL 의무에 대해 법무/전문가 검토 필요 |
+| 모델 파일·캐시 재배포 | all-MiniLM-L6-v2의 실제 LICENSE·고지를 확인하고 동봉. 법무/전문가 검토 권장 |
 
 하면 안 되는 일:
 

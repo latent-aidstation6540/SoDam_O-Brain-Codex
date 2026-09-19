@@ -2,7 +2,7 @@
 
 [English](./LEGAL_GUIDE.en.md) · [LICENSE](./LICENSE) · [NOTICE](./NOTICE) · [제3자 라이선스 목록](./THIRD_PARTY_LICENSES.md)
 
-> 기준일: 2026-09-16. 이 문서는 확인된 프로젝트 사실을 설명하며 법률 자문이 아닙니다. 계약, 상표, 개인정보, 규제 산업, 바이너리 재배포는 **법무/전문가 검토 필요**입니다.
+> 기준일: 2026-09-20. 이 문서는 확인된 프로젝트 사실을 설명하며 법률 자문이 아닙니다. 계약, 상표, 개인정보, 규제 산업, 바이너리 재배포는 **법무/전문가 검토 필요**입니다.
 
 ## 1. 확인된 기본 상태
 
@@ -39,16 +39,16 @@ Apache-2.0은 상업적 사용을 금지하지 않지만 제3자 구성요소, �
 
 ## 4. 외부 구성요소
 
-- 잠금 파일에는 242개 패키지 항목이 있고 라이선스 메타데이터 누락은 0건입니다.
-- 직접 의존성은 Apache-2.0, MIT 또는 이중 라이선스입니다.
+- 잠금 파일에는 의존성 경로 333개가 있습니다. 런타임 241개, 개발 전용 92개이며 라이선스 메타데이터 누락은 0건입니다.
+- 직접 의존성은 Apache-2.0, MIT 또는 이중 라이선스입니다. 잠금 파일에는 `OR`, `AND`, LGPL, CC0, WTFPL, BlueOak 표현도 있으므로 실제 배포 파일의 라이선스 원문을 최종 기준으로 삼아야 합니다.
 - 선택적 sharp/libvips 플랫폼 항목 14개에는 `LGPL-3.0-or-later`가 포함됩니다.
-- all-MiniLM-L6-v2 모델은 모델 저장소에서 Apache-2.0으로 표시됩니다.
-- 배포 시 설치되는 OS·CPU별 파일이 다르므로 잠금 파일만 보고 바이너리 의무가 끝났다고 판단하면 안 됩니다.
+- all-MiniLM-L6-v2 모델 저장소는 모델을 Apache-2.0으로 표시합니다. 모델은 최초 사용 때 별도 캐시에 내려받으며 저장소에는 모델 가중치를 포함하지 않습니다. 모델 파일이나 캐시를 재배포하면 해당 모델의 LICENSE와 고지를 함께 검토·제공해야 합니다.
+- 현재 소스 저장소에는 `node_modules`, 설치 프로그램, 실행 파일, 컨테이너가 포함되지 않습니다. 배포 시 설치되는 OS·CPU별 파일이 다르므로 잠금 파일만 보고 바이너리 의무가 끝났다고 판단하면 안 됩니다.
 
 ## 5. 코드·문서·이미지·샘플 데이터
 
 - 코드와 문서에는 AI가 생성하거나 보조한 내용이 포함될 수 있습니다. 공개·판매·납품 전 사람이 출처, 유사 저작물, 상업 이용 가능성, 정확성을 검토해야 합니다.
-- 현재 스크린샷 5개는 프로젝트의 로컬 대시보드에서 만든 화면이며 PNG 텍스트 메타데이터가 없습니다.
+- 현재 스크린샷 5개(`graph-2d.png`, `list-detail.png`, `overview.png`, `settings.png`, `timeline.png`)는 프로젝트의 로컬 대시보드 화면이며 PNG 텍스트·EXIF·ICC·XMP 메타데이터가 없습니다. 저장소에는 별도의 외부 폰트·영상·음원 파일과 `public`·`examples`·`samples` 폴더가 없습니다.
 - 화면의 포트 번호, `[REDACTED:api-key]`, 기억 문장은 합성 더미입니다. 실명·이메일·고객사·실제 비밀키는 확인되지 않았습니다.
 - Linear, Vercel, shadcn/ui 등의 이름은 더미 예시입니다. 제휴·후원·보증이나 상표 사용권을 뜻하지 않습니다.
 - 시스템 폰트와 직접 작성한 CSS·인라인 기호를 사용합니다. 새 이미지·폰트·아이콘·영상·음원·템플릿을 추가하면 출처와 상업 이용 조건을 기록해야 합니다.
@@ -98,4 +98,6 @@ AI 결과물은 비고유하거나 제3자 자료와 유사할 수 있습니다.
 - [all-MiniLM-L6-v2 모델 LICENSE](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/blob/main/LICENSE)
 - [sharp-libvips 제3자 고지](https://github.com/lovell/sharp-libvips/blob/main/THIRD-PARTY-NOTICES.md)
 - [OpenAI 이용약관](https://openai.com/policies/terms-of-use/)
-- [OpenAI 비즈니스 약관](https://openai.com/policies/business-terms/)
+- [OpenAI 서비스 계약(기업·개발자)](https://openai.com/policies/services-agreement/)
+- [OpenAI 서비스별 약관](https://openai.com/policies/service-terms/)
+- [OpenAI 앱 개발자 약관](https://openai.com/policies/developer-apps-terms/)
