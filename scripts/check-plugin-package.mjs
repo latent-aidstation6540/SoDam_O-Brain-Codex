@@ -36,6 +36,17 @@ function selectedFiles(root) {
 }
 
 const problems = [];
+function readJson(path, label) {
+  try { return JSON.parse(readFileSync(path, 'utf8')); }
+  catch (error) { problems.push(`${label} is not valid JSON: ${error.message}`); return {}; }
+}
+const manifest = readJson(join(packageRoot, '.codex-plugin', 'plugin.json'), 'plugin manifest');
+const mcpConfig = readJson(join(packageRoot, '.mcp.json'), 'MCP config');
+const oBrainMcp = mcpConfig?.mcpServers?.['o-brain'];
+if (manifest?.mcpServers !== './.mcp.json') problems.push('plugin manifest must reference ./.mcp.json');
+if (oBrainMcp?.command !== 'node') problems.push('O-Brain MCP command must be node');
+if (JSON.stringify(oBrainMcp?.args) !== JSON.stringify(['./scripts/start-mcp.mjs'])) problems.push('O-Brain MCP args must start ./scripts/start-mcp.mjs');
+if (oBrainMcp?.cwd !== '.') problems.push('O-Brain MCP cwd must be . so launch is independent of the user working directory');
 const sourceFiles = selectedFiles(sourceRoot);
 const targetFiles = selectedFiles(targetRoot);
 for (const name of sourceFiles.filter(name => !targetFiles.includes(name))) problems.push(`missing packaged file: ${name}`);
