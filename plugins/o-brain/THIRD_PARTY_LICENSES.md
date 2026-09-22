@@ -1,8 +1,8 @@
 # Third-Party License Inventory / 제3자 라이선스 목록
 
-> Generated from `app/package-lock.json` on 2026-09-20. This metadata inventory is not legal advice and does not replace the license text and notices supplied by each package.
+> Generated from `app/package-lock.json` on 2026-09-23. This metadata inventory is not legal advice and does not replace the license text and notices supplied by each package.
 >
-> 2026-09-20 기준 `app/package-lock.json` 메타데이터에서 생성했습니다. 이 목록은 법률 자문이 아니며 각 패키지가 제공하는 라이선스 본문과 고지를 대신하지 않습니다.
+> 2026-09-23 기준 `app/package-lock.json` 메타데이터에서 생성했습니다. 이 목록은 법률 자문이 아니며 각 패키지가 제공하는 라이선스 본문과 고지를 대신하지 않습니다.
 
 - Lockfile dependency entries / 잠금 파일 의존성 항목: **333**
 - Runtime entries / 런타임 항목: **241**

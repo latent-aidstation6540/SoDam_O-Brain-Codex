@@ -2,7 +2,7 @@
 
 [한국어](./LEGAL_GUIDE.md) · [LICENSE](./LICENSE) · [NOTICE](./NOTICE) · [Third-party inventory](./THIRD_PARTY_LICENSES.md)
 
-> Reviewed on 2026-09-20. This document explains verified project facts and is not legal advice. Contracts, trademarks, personal data, regulated use, and binary redistribution **require legal/professional review**.
+> Reviewed on 2026-09-23. This document explains verified project facts and is not legal advice. Contracts, trademarks, personal data, regulated use, and binary redistribution **require legal/professional review**.
 
 ## 1. Verified baseline
 
@@ -22,7 +22,7 @@
 | Copying, forks, modification | Allowed | Keep LICENSE/copyright notices and mark changed files |
 | Source redistribution | Allowed | Provide LICENSE, NOTICE, and third-party notices |
 | Sale and paid support | Allowed | Separately satisfy third-party, tax, consumer, and contract duties |
-| Web-service operation | Allowed | Separately satisfy privacy, security, and OpenAI/Codex terms |
+| Online service operation | Permitted by the project license; unsupported by the current product | The server binds to `127.0.0.1`. Remote operation requires additional development and review of authentication, privacy, security, and OpenAI/Codex terms |
 | Company or client delivery | Conditional | Legal/professional review of actual deliverables and contract |
 | Redistribution of `node_modules`, installers, or executables | Conditional | Review sharp/libvips LGPL duties for exact platform artifacts |
 
@@ -49,7 +49,7 @@ Apache-2.0 does not prohibit commercial use, but it does not guarantee rights in
 
 - Code and documentation may contain AI-generated or AI-assisted material. Human review of source, similarity, commercial rights, and accuracy is required before publication, sale, or delivery.
 - The five current screenshots (`graph-2d.png`, `list-detail.png`, `overview.png`, `settings.png`, and `timeline.png`) show the local project dashboard and contain no PNG text, EXIF, ICC, or XMP metadata. The repository has no separate external font, video, or audio files and no `public`, `examples`, or `samples` directory.
-- Port numbers, `[REDACTED:api-key]`, and memory statements are synthetic. No real names, emails, customers, or working secrets were found.
+- Example port numbers and `[REDACTED:api-key]` in the code are dummy values. The screenshot text was not visually rechecked in this review; inspect it for real names, emails, customers, and secrets immediately before publication or client delivery.
 - Linear, Vercel, and shadcn/ui names are dummy examples and do not imply affiliation, sponsorship, endorsement, or trademark rights.
 - The project uses system fonts, project CSS, and inline symbols. Record source and commercial terms for any new image, font, icon, video, audio, or template.
 - Do not ship personal databases, backups, `.env.local`, conversation logs, or customer materials.
