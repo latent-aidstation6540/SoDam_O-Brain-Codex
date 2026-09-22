@@ -52,6 +52,8 @@ O-Brain does not store everything you say. Rule-based extraction selects user st
 | External DB/payment | O-Brain has no dedicated external database or payment feature |
 | macOS/Linux | User-directory defaults exist in code, but installation and UI flows were not live-verified for this release |
 
+**Verification on 2026-09-23:** `npm run verify` passed lint, type checking, functional, scale, browser, and package checks. The production-dependency audit and tracked-file secret-pattern scan passed. The installed plugin responded through MCP, and the real personal DB passed a read-only integrity check. Browser E2E used a temporary DB; the personal dashboard server was not running at that time. A full new-task automatic recall/capture cycle and visual review of the personal-data dashboard remain unverified.
+
 Verified behavior is separated from unverified scope. “Supported” here means checked in the current code and tests; it is not a warranty for every computer configuration.
 
 ## Prerequisites and Required Software
@@ -328,6 +330,8 @@ npm start
 ESLint, JavaScript type checks, a 10,000-record scale test, Chromium E2E, and package synchronization checks are configured.
 `npm run verify` is the complete pre-release quality gate, and GitHub Actions runs the same checks.
 
+There is no separate `build` script in this repository's `package.json`. The distributable is the source package under `plugins/o-brain/`, not a compiled bundle; `verify:package` checks that its app copy matches the development app and excludes local data.
+
 ## Files and Data Locations
 
 | Location | Contents | In Git? |
@@ -424,6 +428,16 @@ The default policy keeps the latest seven backups. Backups may contain private c
 ## Updates
 
 <details>
+<summary><strong>2026-09-23 — Installed-plugin, data, and documentation recheck</strong></summary>
+
+- `npm run verify` passed lint, types, functional/integration, 10,000-record scale, three Chromium E2E, and package checks
+- Confirmed the installed O-Brain plugin is enabled and responds through MCP; the real personal SQLite DB passed a read-only integrity check
+- Production-dependency audit reported zero known vulnerabilities; major secret patterns were absent from tracked files
+- Marked the new-task automatic hook cycle and the personal dashboard screen, which was not running at the time, as unverified
+
+</details>
+
+<details>
 <summary><strong>v0.2.0 — Codex port and final hardening (2026-09-16)</strong></summary>
 
 - Added Codex-standard `.codex-plugin` and marketplace manifests
@@ -505,7 +519,8 @@ O-Brain is provided under the **Apache License, Version 2.0** (SPDX `Apache-2.0`
 |---|---|
 | Personal, educational, internal company use | Allowed under Apache-2.0 conditions |
 | Modification, copying, forks | Allowed; preserve notices and mark changes |
-| Source redistribution, sale, service operation | Allowed; provide LICENSE/NOTICE/third-party notices and follow service terms |
+| Source redistribution and sale | Allowed under Apache-2.0 conditions; provide LICENSE, NOTICE, and applicable third-party notices |
+| Online service operation | Commercial permission under the license does not mean the current app supports remote hosting. It binds to `127.0.0.1`; remote service operation requires additional development and review of authentication, privacy, security, and terms. |
 | Company or client delivery | Conditional; legal/professional review of actual files and contracts required |
 | Distribution with binaries or `node_modules` | Legal/professional review of sharp/libvips LGPL duties required |
 | Redistribution of model files or caches | Verify and include the actual all-MiniLM-L6-v2 LICENSE/notices; legal/professional review recommended |

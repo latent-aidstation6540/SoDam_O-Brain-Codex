@@ -136,6 +136,7 @@ img { max-width: 100%; }</style>
 <td>User-directory defaults exist in code, but installation and UI flows were not live-verified for this release</td>
 </tr>
 </tbody></table>
+<p><strong>Verification on 2026-09-23:</strong> <code>npm run verify</code> passed lint, type checking, functional, scale, browser, and package checks. The production-dependency audit and tracked-file secret-pattern scan passed. The installed plugin responded through MCP, and the real personal DB passed a read-only integrity check. Browser E2E used a temporary DB; the personal dashboard server was not running at that time. A full new-task automatic recall/capture cycle and visual review of the personal-data dashboard remain unverified.</p>
 <p>Verified behavior is separated from unverified scope. “Supported” here means checked in the current code and tests; it is not a warranty for every computer configuration.</p>
 <h2 id="prerequisites-and-required-software">Prerequisites and Required Software</h2>
 <p>Programs to install first:</p>
@@ -488,6 +489,7 @@ npm start
 </code></pre>
 <p>ESLint, JavaScript type checks, a 10,000-record scale test, Chromium E2E, and package synchronization checks are configured.
 <code>npm run verify</code> is the complete pre-release quality gate, and GitHub Actions runs the same checks.</p>
+<p>There is no separate <code>build</code> script in this repository&#39;s <code>package.json</code>. The distributable is the source package under <code>plugins/o-brain/</code>, not a compiled bundle; <code>verify:package</code> checks that its app copy matches the development app and excludes local data.</p>
 <h2 id="files-and-data-locations">Files and Data Locations</h2>
 <table>
 <thead>
@@ -671,6 +673,17 @@ Codex MCP or browser
 <p>The default policy keeps the latest seven backups. Backups may contain private conversations and project information, so do not post them directly to email, messengers, or public repositories.</p>
 <h2 id="updates">Updates</h2>
 <details>
+<summary><strong>2026-09-23 — Installed-plugin, data, and documentation recheck</strong></summary>
+
+<ul>
+<li><code>npm run verify</code> passed lint, types, functional/integration, 10,000-record scale, three Chromium E2E, and package checks</li>
+<li>Confirmed the installed O-Brain plugin is enabled and responds through MCP; the real personal SQLite DB passed a read-only integrity check</li>
+<li>Production-dependency audit reported zero known vulnerabilities; major secret patterns were absent from tracked files</li>
+<li>Marked the new-task automatic hook cycle and the personal dashboard screen, which was not running at the time, as unverified</li>
+</ul>
+</details>
+
+<details>
 <summary><strong>v0.2.0 — Codex port and final hardening (2026-09-16)</strong></summary>
 
 <ul>
@@ -787,8 +800,12 @@ Codex MCP or browser
 <td>Allowed; preserve notices and mark changes</td>
 </tr>
 <tr>
-<td>Source redistribution, sale, service operation</td>
-<td>Allowed; provide LICENSE/NOTICE/third-party notices and follow service terms</td>
+<td>Source redistribution and sale</td>
+<td>Allowed under Apache-2.0 conditions; provide LICENSE, NOTICE, and applicable third-party notices</td>
+</tr>
+<tr>
+<td>Online service operation</td>
+<td>Commercial permission under the license does not mean the current app supports remote hosting. It binds to <code>127.0.0.1</code>; remote service operation requires additional development and review of authentication, privacy, security, and terms.</td>
 </tr>
 <tr>
 <td>Company or client delivery</td>
