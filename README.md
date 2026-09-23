@@ -183,6 +183,8 @@ node scripts/o-brain-cli.mjs selftest
 
 먼저 `$o-brain-backup`으로 백업합니다.
 
+Windows에서는 사용 중인 O-Brain MCP가 SQLite 파일을 잠글 수 있습니다. 작업을 마치고 Codex Desktop과 O-Brain을 쓰는 CLI 작업을 닫은 뒤 별도 PowerShell에서 아래 갱신 명령을 실행하세요. Codex 앱과 PowerShell이 서로 다른 `CODEX_HOME`을 사용하면 다른 설치본을 갱신할 수 있으므로, 실행 전 해당 환경의 `codex plugin list -m o-brain-codex --json` 결과를 확인하세요. 캐시를 수동으로 삭제하지 마세요.
+
 GitHub 원격 Marketplace로 설치했다면 다음 순서로 갱신합니다.
 
 ~~~powershell
@@ -474,6 +476,7 @@ Codex MCP 또는 브라우저
 | 증상 | 확인·해결 |
 |---|---|
 | O-Brain 스킬이 안 보임 | `codex plugin list`에서 설치를 확인하고 Codex를 새 작업으로 다시 엽니다. |
+| `plugin remove`에서 `os error 5` | 실행 중인 O-Brain MCP가 SQLite 모듈을 잠근 상태입니다. 작업을 마치고 Codex 앱·CLI를 닫은 뒤, 같은 `CODEX_HOME`의 PowerShell에서 제거·재설치를 다시 실행합니다. 캐시를 직접 지우지 마세요. |
 | `ERR_MODULE_NOT_FOUND` | `$o-brain-setup` 또는 `node scripts/o-brain-cli.mjs setup` 실행 |
 | Node 버전 오류 | `node --version`이 26.7.x인지 확인 |
 | `Marketplace not found` | 먼저 `codex plugin marketplace add .`, 다음에 `codex plugin add o-brain@o-brain-codex`를 별도 실행 |

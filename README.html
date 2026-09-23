@@ -283,6 +283,7 @@ node scripts/o-brain-cli.mjs selftest
 <p>설정은 <code>npm ci</code>로 잠금 파일에 고정된 의존성을 설치합니다. 최초 검색 또는 테스트 때 <code>sentence-transformers/all-MiniLM-L6-v2</code> 모델이 내려받아질 수 있습니다.</p>
 <h3 id="업데이트">업데이트</h3>
 <p>먼저 <code>$o-brain-backup</code>으로 백업합니다.</p>
+<p>Windows에서는 사용 중인 O-Brain MCP가 SQLite 파일을 잠글 수 있습니다. 작업을 마치고 Codex Desktop과 O-Brain을 쓰는 CLI 작업을 닫은 뒤 별도 PowerShell에서 아래 갱신 명령을 실행하세요. Codex 앱과 PowerShell이 서로 다른 <code>CODEX_HOME</code>을 사용하면 다른 설치본을 갱신할 수 있으므로, 실행 전 해당 환경의 <code>codex plugin list -m o-brain-codex --json</code> 결과를 확인하세요. 캐시를 수동으로 삭제하지 마세요.</p>
 <p>GitHub 원격 Marketplace로 설치했다면 다음 순서로 갱신합니다.</p>
 <pre><code class="language-powershell">codex plugin marketplace upgrade o-brain-codex
 codex plugin remove o-brain@o-brain-codex
@@ -727,6 +728,10 @@ Codex MCP 또는 브라우저
 <tbody><tr>
 <td>O-Brain 스킬이 안 보임</td>
 <td><code>codex plugin list</code>에서 설치를 확인하고 Codex를 새 작업으로 다시 엽니다.</td>
+</tr>
+<tr>
+<td><code>plugin remove</code>에서 <code>os error 5</code></td>
+<td>실행 중인 O-Brain MCP가 SQLite 모듈을 잠근 상태입니다. 작업을 마치고 Codex 앱·CLI를 닫은 뒤, 같은 <code>CODEX_HOME</code>의 PowerShell에서 제거·재설치를 다시 실행합니다. 캐시를 직접 지우지 마세요.</td>
 </tr>
 <tr>
 <td><code>ERR_MODULE_NOT_FOUND</code></td>
