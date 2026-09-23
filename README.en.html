@@ -136,7 +136,7 @@ img { max-width: 100%; }</style>
 <td>User-directory defaults exist in code, but installation and UI flows were not live-verified for this release</td>
 </tr>
 </tbody></table>
-<p><strong>Verification on 2026-09-23:</strong> <code>npm run verify</code> passed lint, type checking, functional, scale, browser, and package checks. The production-dependency audit and tracked-file secret-pattern scan passed. The installed plugin responded through MCP, and the real personal DB passed a read-only integrity check. Browser E2E used a temporary DB; the personal dashboard server was not running at that time. A full new-task automatic recall/capture cycle and visual review of the personal-data dashboard remain unverified.</p>
+<p><strong>Verification on 2026-09-23:</strong> <code>npm run verify</code> passed lint, type, functional, scale, browser, and package checks. The installed MCP responded, and the personal DB passed a read-only integrity check. Two fresh Git projects received global memory with project isolation; a normal Codex session in a new non-Git project captured one memory automatically. The live personal dashboard displayed memories with no browser console errors or horizontal overflow at 390px. Automatic capture saved zero memories with <code>codex exec --ephemeral</code>; automatic injection in a newly created Codex Desktop task was not directly checked.</p>
 <p>Verified behavior is separated from unverified scope. “Supported” here means checked in the current code and tests; it is not a warranty for every computer configuration.</p>
 <h2 id="prerequisites-and-required-software">Prerequisites and Required Software</h2>
 <p>Programs to install first:</p>
@@ -680,7 +680,8 @@ Codex MCP or browser
 <li><code>npm run verify</code> passed lint, types, functional/integration, 10,000-record scale, three Chromium E2E, and package checks</li>
 <li>Confirmed the installed O-Brain plugin is enabled and responds through MCP; the real personal SQLite DB passed a read-only integrity check</li>
 <li>Production-dependency audit reported zero known vulnerabilities; major secret patterns were absent from tracked files</li>
-<li>Marked the new-task automatic hook cycle and the personal dashboard screen, which was not running at the time, as unverified</li>
+<li>Measured global recall and project isolation in two fresh Git projects, plus automatic Stop capture in a normal session in a new non-Git project</li>
+<li>Confirmed the live personal dashboard displayed memories without browser errors or 390px overflow; separately documented zero automatic saves with <code>--ephemeral</code> and unverified new Desktop-task UI</li>
 </ul>
 </details>
 
@@ -759,7 +760,7 @@ Codex MCP or browser
 </tr>
 <tr>
 <td>Automatic capture fails</td>
-<td>Confirm the plugin is active in a new task and run <code>npm run test:hooks</code>.</td>
+<td><code>codex exec --ephemeral</code> does not persist session files and saved zero memories in this verification. Retry in a normal session, check that the plugin is active, and run <code>npm run test:hooks</code>. Use <code>$o-brain-remember</code> to save an important decision explicitly.</td>
 </tr>
 <tr>
 <td>Model download fails</td>
@@ -787,6 +788,8 @@ Codex MCP or browser
 <p>A. Plugin-mode data defaults to <code>%LOCALAPPDATA%\SoDamAI\O-Brain\data</code>, separate from the cache. A backup before updating is still recommended.</p>
 <p><strong>Q. Can automatic capture be wrong?</strong></p>
 <p>A. Rule-based extraction can miss or misclassify statements. Review the dashboard and use <code>$o-brain-remember</code> for critical items.</p>
+<p><strong>Q. Does <code>codex exec --ephemeral</code> capture memories automatically?</strong></p>
+<p>A. It saved zero memories in the live check. This option does not persist session files; use a normal session for automatic capture or save explicitly with <code>$o-brain-remember</code>.</p>
 <h2 id="license-copyright-and-commercial-use">License, Copyright, and Commercial Use</h2>
 <p>O-Brain is provided under the <strong>Apache License, Version 2.0</strong> (SPDX <code>Apache-2.0</code>), <strong>Copyright 2026 SoDam AI Studio</strong>. See <a href="./LICENSE"><code>LICENSE</code></a>, <a href="./NOTICE"><code>NOTICE</code></a>, <a href="./THIRD_PARTY_LICENSES.md"><code>THIRD_PARTY_LICENSES.md</code></a>, and the plain-language <a href="./LEGAL_GUIDE.en.md"><code>LEGAL_GUIDE.en.md</code></a>.</p>
 <table>

@@ -136,7 +136,7 @@ img { max-width: 100%; }</style>
 <td>사용자 폴더 기본값은 코드에 있으나 이 릴리스의 실제 설치·UI 흐름은 미확인</td>
 </tr>
 </tbody></table>
-<p><strong>2026-09-23 검증:</strong> <code>npm run verify</code>(lint·타입·기능·규모·브라우저·패키지 검사), 운영 의존성 감사, 추적 파일 비밀키 패턴 검사가 통과했습니다. 설치된 플러그인의 MCP 응답과 실제 개인 DB의 읽기 전용 무결성도 확인했습니다. 브라우저 E2E는 임시 DB로 실행했으며, 당시 개인 대시보드 서버는 꺼져 있었습니다. 새 Codex 작업에서 자동 주입·종료 저장을 연속으로 수행하는 실제 사용 흐름과 개인 데이터 화면의 시각 검수는 미확인입니다.</p>
+<p><strong>2026-09-23 검증:</strong> <code>npm run verify</code>의 lint·타입·기능·규모·브라우저·패키지 검사가 통과했습니다. 설치본의 MCP 응답과 개인 DB 읽기 전용 무결성을 확인했습니다. 서로 다른 새 Git 프로젝트 2곳에서 전역 기억 주입과 프로젝트별 격리를 확인했고, Git이 없는 새 프로젝트의 일반 Codex 세션에서 자동 저장 1건을 확인했습니다. 실제 개인 대시보드는 기억 목록을 표시했고 브라우저 콘솔 오류와 390px 모바일 가로 넘침은 없었습니다. <code>codex exec --ephemeral</code>에서는 자동 저장이 0건이었으며, 새 Codex 데스크톱 작업 화면의 자동 주입은 직접 확인하지 못했습니다.</p>
 <p>확인한 범위와 미확인 범위를 나눠 적었습니다. “지원”은 현재 코드와 테스트에서 확인한 범위를 뜻하며, 모든 PC 조합을 보증한다는 뜻은 아닙니다.</p>
 <h2 id="사전-준비물과-필요-프로그램">사전 준비물과 필요 프로그램</h2>
 <p>처음 설치할 프로그램:</p>
@@ -680,7 +680,8 @@ Codex MCP 또는 브라우저
 <li><code>npm run verify</code> 전체 통과: lint, 타입, 기능·통합, 1만 건 규모, Chromium E2E 3건, 패키지 검사</li>
 <li>설치된 O-Brain 플러그인 활성 및 MCP 응답 확인; 실제 개인 SQLite DB는 읽기 전용 무결성 검사 통과</li>
 <li>운영 의존성 감사에서 알려진 취약점 0건; 추적 파일의 주요 비밀키 패턴 0건</li>
-<li>실제 새 세션의 자동 훅 흐름과 당시 꺼져 있던 개인 대시보드 화면은 미확인으로 명시</li>
+<li>새 Git 프로젝트 2곳에서 전역 기억 주입·프로젝트별 격리, Git 없는 새 프로젝트의 일반 세션에서 종료 시 자동 저장을 실측</li>
+<li>개인 대시보드에 기억이 표시되고 브라우저 오류·390px 가로 넘침이 없음을 확인; <code>--ephemeral</code> 자동 저장 0건과 새 데스크톱 작업 UI 미확인은 별도 표기</li>
 </ul>
 </details>
 
@@ -759,7 +760,7 @@ Codex MCP 또는 브라우저
 </tr>
 <tr>
 <td>자동 저장이 안 됨</td>
-<td>새 작업에서 플러그인이 활성인지 확인하고 <code>npm run test:hooks</code> 실행</td>
+<td><code>codex exec --ephemeral</code>이었다면 세션 파일이 남지 않아 이번 검증에서 자동 저장 0건이었습니다. 일반 세션에서 다시 확인하고, 플러그인 활성 상태와 <code>npm run test:hooks</code> 결과를 점검하세요. 중요한 결정은 <code>$o-brain-remember</code>로 직접 저장할 수 있습니다.</td>
 </tr>
 <tr>
 <td>모델 다운로드 실패</td>
@@ -787,6 +788,8 @@ Codex MCP 또는 브라우저
 <p>A. 기본 플러그인 데이터는 <code>%LOCALAPPDATA%\SoDamAI\O-Brain\data</code>에 있어 캐시 재설치와 분리됩니다. 그래도 업데이트 전 백업을 권장합니다.</p>
 <p><strong>Q. 자동 저장이 틀릴 수 있나요?</strong></p>
 <p>A. 규칙 기반 추출이므로 누락·오탐 가능성이 있습니다. 대시보드에서 검토하고 중요한 내용은 <code>$o-brain-remember</code>로 저장하세요.</p>
+<p><strong>Q. <code>codex exec --ephemeral</code>에서도 자동으로 기억하나요?</strong></p>
+<p>A. 이번 실제 검사에서는 0건이 저장됐습니다. 이 옵션은 세션 파일을 남기지 않으므로 일반 세션에서 자동 저장을 사용하거나 <code>$o-brain-remember</code>로 직접 저장하세요.</p>
 <h2 id="라이선스저작권상업적-사용">라이선스·저작권·상업적 사용</h2>
 <p>O-Brain은 <strong>Apache License, Version 2.0</strong>(SPDX <code>Apache-2.0</code>), <strong>Copyright 2026 SoDam AI Studio</strong>로 제공됩니다. 공식 본문은 <a href="./LICENSE"><code>LICENSE</code></a>, 고지는 <a href="./NOTICE"><code>NOTICE</code></a>, 전체 의존성 메타데이터는 <a href="./THIRD_PARTY_LICENSES.md"><code>THIRD_PARTY_LICENSES.md</code></a>, 쉬운 배포 안내는 <a href="./LEGAL_GUIDE.md"><code>LEGAL_GUIDE.md</code></a>를 확인하세요.</p>
 <table>

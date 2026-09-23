@@ -52,7 +52,7 @@ O-Brain does not store everything you say. Rule-based extraction selects user st
 | External DB/payment | O-Brain has no dedicated external database or payment feature |
 | macOS/Linux | User-directory defaults exist in code, but installation and UI flows were not live-verified for this release |
 
-**Verification on 2026-09-23:** `npm run verify` passed lint, type checking, functional, scale, browser, and package checks. The production-dependency audit and tracked-file secret-pattern scan passed. The installed plugin responded through MCP, and the real personal DB passed a read-only integrity check. Browser E2E used a temporary DB; the personal dashboard server was not running at that time. A full new-task automatic recall/capture cycle and visual review of the personal-data dashboard remain unverified.
+**Verification on 2026-09-23:** `npm run verify` passed lint, type, functional, scale, browser, and package checks. The installed MCP responded, and the personal DB passed a read-only integrity check. Two fresh Git projects received global memory with project isolation; a normal Codex session in a new non-Git project captured one memory automatically. The live personal dashboard displayed memories with no browser console errors or horizontal overflow at 390px. Automatic capture saved zero memories with `codex exec --ephemeral`; automatic injection in a newly created Codex Desktop task was not directly checked.
 
 Verified behavior is separated from unverified scope. “Supported” here means checked in the current code and tests; it is not a warranty for every computer configuration.
 
@@ -435,7 +435,8 @@ The default policy keeps the latest seven backups. Backups may contain private c
 - `npm run verify` passed lint, types, functional/integration, 10,000-record scale, three Chromium E2E, and package checks
 - Confirmed the installed O-Brain plugin is enabled and responds through MCP; the real personal SQLite DB passed a read-only integrity check
 - Production-dependency audit reported zero known vulnerabilities; major secret patterns were absent from tracked files
-- Marked the new-task automatic hook cycle and the personal dashboard screen, which was not running at the time, as unverified
+- Measured global recall and project isolation in two fresh Git projects, plus automatic Stop capture in a normal session in a new non-Git project
+- Confirmed the live personal dashboard displayed memories without browser errors or 390px overflow; separately documented zero automatic saves with `--ephemeral` and unverified new Desktop-task UI
 
 </details>
 
@@ -483,7 +484,7 @@ Full design history is in [`.PRD/`](./.PRD/), and the Codex port decision is in 
 | Latest changes are missing | Reinstall plugin, open a new task, then press `Ctrl+F5`. |
 | Port conflict | Put `OBRAIN_PORT=7741` in the user `.env.local` and restart. |
 | Zero memories | State a confirmed decision, end the task normally, then run `$o-brain-status`. |
-| Automatic capture fails | Confirm the plugin is active in a new task and run `npm run test:hooks`. |
+| Automatic capture fails | `codex exec --ephemeral` does not persist session files and saved zero memories in this verification. Retry in a normal session, check that the plugin is active, and run `npm run test:hooks`. Use `$o-brain-remember` to save an important decision explicitly. |
 | Model download fails | Check internet/proxy access and rerun selftest. |
 | Dashboard returns 403 | Do not open the saved HTML directly; use `$o-brain-open` and the local server URL. |
 | Suspected DB damage | Stop writes, preserve `$o-brain-backup` output and `data/backup/`, then seek expert review. |
@@ -513,6 +514,10 @@ A. Plugin-mode data defaults to `%LOCALAPPDATA%\SoDamAI\O-Brain\data`, separate 
 **Q. Can automatic capture be wrong?**
 
 A. Rule-based extraction can miss or misclassify statements. Review the dashboard and use `$o-brain-remember` for critical items.
+
+**Q. Does `codex exec --ephemeral` capture memories automatically?**
+
+A. It saved zero memories in the live check. This option does not persist session files; use a normal session for automatic capture or save explicitly with `$o-brain-remember`.
 
 ## License, Copyright, and Commercial Use
 
