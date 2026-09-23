@@ -47,6 +47,8 @@ try {
   const extracted = await runHook('memory-extract-hook.mjs', { transcript_path: transcript, cwd: project, hook_event_name: 'Stop' });
   assert.match(extracted.stderr, /저장 1건/);
   assert.doesNotMatch(extracted.stderr, /sk-test-secret-value/);
+  const noTranscript = await runHook('memory-extract-hook.mjs', { cwd: project, hook_event_name: 'Stop' });
+  assert.match(noTranscript.stderr, /transcript_path가 없어 자동 저장을 건너뜁니다/);
   process.env.OBRAIN_DATA_DIR = data;
   const { openDb } = await import('./db.mjs');
   const db = openDb();
@@ -56,6 +58,7 @@ try {
   assert.equal(session.project, project);
   assert.match(memory.content, /\[REDACTED(?::[^\]]+)?\]/);
   assert.doesNotMatch(memory.content, /sk-test-secret-value/);
+  assert.equal(db.prepare('SELECT COUNT(*) AS count FROM memory').get().count, 1);
   db.close();
 
   const status = spawnSync(process.execPath, [join(root, 'app', 'src', 'status.mjs')], {
