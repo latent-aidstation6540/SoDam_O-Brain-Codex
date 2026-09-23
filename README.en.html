@@ -283,6 +283,7 @@ node scripts/o-brain-cli.mjs selftest
 <p>Setup runs <code>npm ci</code> with the locked dependencies. The first search or test may download the <code>sentence-transformers/all-MiniLM-L6-v2</code> model.</p>
 <h3 id="updating">Updating</h3>
 <p>Create a backup with <code>$o-brain-backup</code> first.</p>
+<p>On Windows, an active O-Brain MCP process can lock the SQLite files. Finish your work, close Codex Desktop and any CLI tasks using O-Brain, then run the update commands below in a separate PowerShell window. Codex Desktop and PowerShell may use different <code>CODEX_HOME</code> values; check <code>codex plugin list -m o-brain-codex --json</code> in the environment you intend to update. Do not delete the cache manually.</p>
 <p>For a GitHub remote marketplace, refresh and reinstall in this order:</p>
 <pre><code class="language-powershell">codex plugin marketplace upgrade o-brain-codex
 codex plugin remove o-brain@o-brain-codex
@@ -727,6 +728,10 @@ Codex MCP or browser
 <tbody><tr>
 <td>O-Brain skills are missing</td>
 <td>Check <code>codex plugin list</code>, then open a new Codex task.</td>
+</tr>
+<tr>
+<td><code>plugin remove</code> reports <code>os error 5</code></td>
+<td>An active O-Brain MCP process is locking SQLite modules. Finish your work, close Codex Desktop and CLI tasks, then retry removal and installation from PowerShell using the same <code>CODEX_HOME</code>. Do not delete the cache manually.</td>
 </tr>
 <tr>
 <td><code>ERR_MODULE_NOT_FOUND</code></td>

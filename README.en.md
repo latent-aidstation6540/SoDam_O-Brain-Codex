@@ -183,6 +183,8 @@ Setup runs `npm ci` with the locked dependencies. The first search or test may d
 
 Create a backup with `$o-brain-backup` first.
 
+On Windows, an active O-Brain MCP process can lock the SQLite files. Finish your work, close Codex Desktop and any CLI tasks using O-Brain, then run the update commands below in a separate PowerShell window. Codex Desktop and PowerShell may use different `CODEX_HOME` values; check `codex plugin list -m o-brain-codex --json` in the environment you intend to update. Do not delete the cache manually.
+
 For a GitHub remote marketplace, refresh and reinstall in this order:
 
 ~~~powershell
@@ -474,6 +476,7 @@ Full design history is in [`.PRD/`](./.PRD/), and the Codex port decision is in 
 | Symptom | Check / fix |
 |---|---|
 | O-Brain skills are missing | Check `codex plugin list`, then open a new Codex task. |
+| `plugin remove` reports `os error 5` | An active O-Brain MCP process is locking SQLite modules. Finish your work, close Codex Desktop and CLI tasks, then retry removal and installation from PowerShell using the same `CODEX_HOME`. Do not delete the cache manually. |
 | `ERR_MODULE_NOT_FOUND` | Run `$o-brain-setup` or `node scripts/o-brain-cli.mjs setup`. |
 | Node version error | Confirm `node --version` is 26.7.x. |
 | `Marketplace not found` | Run `codex plugin marketplace add .` first, then `codex plugin add o-brain@o-brain-codex`. |
